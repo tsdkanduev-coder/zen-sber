@@ -177,7 +177,29 @@ Your system should be ready to build Firefox for Desktop!
 
 ### 5. `npm run build -- --jobs 2` (`surfer build` → `mach build -j2`)
 
-Starting. Official docs recommend `--jobs 2` when a build sticks or freezes; previous unrestricted compile OOM-killed this 15 GiB / no-swap class of VM.
+**Configure: success. Compile: in progress.** Log: `/tmp/zen-sber-build.log`
 
-- Log: `/tmp/zen-sber-build.log`
-- Expected artifact: `engine/obj-x86_64-pc-linux-gnu/dist/bin/zen`
+After the designer-map commit (`0c1613558`) landed mid-session, created the two new Surfer-style engine symlinks so `%include zen-sber-theme.css` and `userContent.css` resolve:
+
+- `engine/zen/common/styles/zen-sber-theme.css` → `src/zen/common/styles/zen-sber-theme.css`
+- `engine/zen/common/styles/userContent.css` → `src/zen/common/styles/userContent.css`
+
+Configure highlights:
+
+```
+surfer build --jobs 2
+python3 ./mach build -j2
+buildMode defaulting to 'dev'
+--with-app-name=zen
+checking nasm version... 3.01
+checking the wasm C compiler version... 21.1.8
+checking for gtk+-3.0 >= 3.14.0 ... yes
+Creating config.status
+Reticulating splines...
+```
+
+Object dir: `/workspace/engine/obj-x86_64-pc-linux-gnu/`
+
+At ~4 minutes: compiling Rust crates (`uniffi`, `xpcom`, …). `gmake -j2`. Memory ~3.9 GiB used / 11 GiB available (15 GiB total, no swap). Disk ~194G free.
+
+Expected artifact: `engine/obj-x86_64-pc-linux-gnu/dist/bin/zen`
