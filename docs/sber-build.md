@@ -50,21 +50,21 @@ Existing CI already covers the Surfer import path on PRs to `dev`
 (`.github/workflows/pr-test.yml`). Full Linux compile is
 `.github/workflows/linux-release-build.yml` (needs release secrets / PGO).
 
-## Environment snapshot (this Cloud Agent VM)
-
-Recorded 2026-08-15:
+## Environment snapshot
 
 | Tool | Version / notes |
 | --- | --- |
 | Node | v22.14.0 (`.nvmrc` = 22) |
 | Python | 3.12.3 |
-| rustc / cargo | started at 1.83.0; **installed 1.94.1** via `rustup toolchain install 1.94.1` to match `.rust-toolchain` |
-| sccache | not on PATH initially; `mach bootstrap` installed `~/.mozbuild/sccache/sccache` |
-| nasm | not on PATH initially; apt `nasm` 2.16.01 plus bootstrap `~/.mozbuild/nasm/nasm` 3.01 |
-| clang | Ubuntu 18.1.3 on PATH; bootstrap uses `~/.mozbuild/clang` 21.1.8 |
-| Disk | ~224GB free at start |
-| CPU / RAM | 4 cores, 15 GiB, no swap |
-| Firefox tree | not in git; Surfer unpacked `firefox-154.0` (candidate) into `engine/` |
+| rustc / cargo | VM default 1.83.0; **installed 1.94.1** via `rustup toolchain install 1.94.1` to match `.rust-toolchain` |
+| sccache | not on PATH until `mach bootstrap` |
+| nasm | not on PATH until bootstrap / apt |
+| clang | Ubuntu 18.1.3 on PATH; bootstrap uses `~/.mozbuild/clang` |
+| Disk | 252G total, ~229G free at start of jobs-2 run |
+| CPU / RAM | 4 cores, 15 GiB, **no swap** (`swapon /swapfile` → `Invalid argument` in this container) |
+| Firefox tree | not in git; Surfer downloads into `engine/` |
+
+**Memory note:** a previous unrestricted `mach build` on a 15 GiB / no-swap VM was OOM-killed (~14/15 GiB used). Official docs recommend `npm run build -- --jobs 2` when the build sticks or freezes. This run uses `--jobs 2`.
 
 ## Build log — 2026-08-15 Cloud Agent
 
@@ -112,3 +112,31 @@ A full Firefox/Zen compile on 4 cores / 15 GiB can take hours and may OOM at LTO
 - Runtime binary: `engine/obj-x86_64-pc-linux-gnu/dist/bin/zen`
 - Then `npm start` → `cd engine && python3 ./mach run --noprofile`
 - Optional package: `npm run package`
+
+## Build log — 2026-08-15 jobs-2 Cloud Agent
+
+Fresh VM (no leftover `engine/`, `node_modules/`, or `~/.mozbuild`). Branch `cursor/sber-theme-zen-rebuild-0458`. Commands from `/workspace`. Theme tokens unchanged (`#21A038` / `#FFFFFF`).
+
+### 1. `rustup toolchain install 1.94.1 && rustup default 1.94.1`
+
+**Exit: 0**
+
+```
+1.94.1-x86_64-unknown-linux-gnu installed - rustc 1.94.1 (e408947bf 2026-03-25)
+rustc 1.94.1 (e408947bf 2026-03-25)
+cargo 1.94.1 (29ea6fb6a 2026-03-24)
+```
+
+Swap attempt (`fallocate -l 16G /swapfile && mkswap && swapon`) failed: `swapon: /swapfile: swapon failed: Invalid argument`. Compile will rely on `--jobs 2`.
+
+### 2. `npm i`
+
+**Exit: 0**
+
+```
+added 314 packages, and audited 315 packages in 3s
+```
+
+### 3. `npm run init` (official download + import + bootstrap)
+
+In progress. Log: `/tmp/zen-sber-init.log`
