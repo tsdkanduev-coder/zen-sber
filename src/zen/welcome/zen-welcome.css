@@ -28,7 +28,7 @@
   flex-direction: column;
   -moz-window-dragging: drag;
 
-  --zen-primary-color: light-dark(black, white);
+  --zen-primary-color: #21A038;
 
   #zen-welcome-start-button {
     opacity: 0;

@@ -738,3 +738,16 @@
     display: none !important;
   }
 }
+
+/* Zen new-tab is the urlbar (`zen.urlbar.replace-newtab`), not about:newtab. */
+#urlbar[zen-newtab] {
+  & .urlbar-background {
+    background-color: color-mix(
+      in srgb,
+      var(--zen-primary-color) 10%,
+      var(--zen-urlbar-background)
+    ) !important;
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--zen-primary-color) 35%, transparent);
+  }
+}
