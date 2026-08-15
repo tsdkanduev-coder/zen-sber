@@ -203,3 +203,49 @@ Object dir: `/workspace/engine/obj-x86_64-pc-linux-gnu/`
 At ~4 minutes: compiling Rust crates (`uniffi`, `xpcom`, …). `gmake -j2`. Memory ~3.9 GiB used / 11 GiB available (15 GiB total, no swap). Disk ~194G free.
 
 Expected artifact: `engine/obj-x86_64-pc-linux-gnu/dist/bin/zen`
+
+## Build log — 2026-08-15 designer-map Cloud Agent
+
+Fresh compile after replacing the first-pass chrome over-theme with the designer
+map (one lever + `zen-sber-theme.css` + `userContent.css`). Branch
+`cursor/sber-theme-zen-rebuild-0458`. Commands from `/workspace`. 15 GiB RAM, no
+swap, `--jobs 2`.
+
+### 1. `rustup toolchain install 1.94.1 && rustup default 1.94.1`
+
+**Exit: 0**
+
+```
+1.94.1-x86_64-unknown-linux-gnu installed - rustc 1.94.1 (e408947bf 2026-03-25)
+rustc 1.94.1 (e408947bf 2026-03-25)
+cargo 1.94.1 (29ea6fb6a 2026-03-24)
+```
+
+### 2. `npm i`
+
+**Exit: 0** — `added 314 packages, and audited 315 packages in 3s`
+
+### 3. `npm run init` (download + import + bootstrap)
+
+**Exit: 0.** Log: `/tmp/zen-sber-init.log`
+
+- Surfer unpacked Firefox 154.0 to `/workspace/engine`
+- Success banner: `You should be ready to make changes to Zen Sber.`
+- `ffprefs` wrote `pref("zen.theme.accent-color", "#21A038");` into `engine/browser/app/profile/zen.js`
+- Imported designer files: `engine/zen/common/styles/zen-theme.css` (`--zen-primary-color: #21A038` + `%include zen-sber-theme.css`), `zen-sber-theme.css`, `userContent.css`, `zenThemeModifier.js` USER_SHEET hook
+- Private/unsynced blocks remain upstream
+- Bootstrap: `Your version of Rust (1.94.1) is new enough.` / `Your system should be ready to build Firefox for Desktop!`
+
+### 4. `python3 ./scripts/update_en_US_packs.py`
+
+**Exit: 0.** `engine/browser/locales/en-US/browser/zen-welcome.ftl` includes “Your Zen Sber has been set up correctly!”
+
+### 5. `npm run build -- --jobs 2`
+
+**In progress** at docs-update time. Log: `/tmp/zen-sber-build.log`
+
+- Object dir: `/workspace/engine/obj-x86_64-pc-linux-gnu/`
+- `gmake -f client.mk -j2 -s` is compiling (Rust crates + C++ stubs)
+- Memory after ~3 min of compile: ~4 GiB used / ~11 GiB available
+
+A full Firefox/Zen compile on 4 cores / 15 GiB can take hours and may OOM at LTO link. If this VM cannot finish, the blocker will be recorded here (command, exit code, last error). If it finishes, the artifact path will be recorded (`engine/obj-x86_64-pc-linux-gnu/dist/bin/zen`).
