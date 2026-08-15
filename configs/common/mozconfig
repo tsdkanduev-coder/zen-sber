@@ -107,3 +107,11 @@ ac_add_options MOZ_TELEMETRY_REPORTING=
 # Allow loading unsigned extensions
 export MOZ_REQUIRE_SIGNING=
 mk_add_options MOZ_REQUIRE_SIGNING=
+
+# Low-RAM official compile: last gkrust LTO used ~12.6 GiB RSS and killed a
+# 15 GiB / no-swap VM. Keep LTO for ZEN_RELEASE CI (block above).
+if ! test "$ZEN_RELEASE"; then
+  ac_add_options --disable-lto
+  mk_add_options MOZ_MAKE_FLAGS="-j1"
+  export MOZ_LTO=0
+fi

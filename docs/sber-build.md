@@ -281,3 +281,18 @@ plus `clang++` exhausted the 15 GiB / no-swap VM. The pod was terminated
 (`exit 4294967295`). **No artifact:**
 `engine/obj-x86_64-pc-linux-gnu/dist/bin/zen` was never produced. S2 is CSS-only;
 no new compile was started.
+
+## Build log — 2026-08-15 LTO-off / `-j1` retry
+
+Theme unchanged. Goal is a binary on the same 15 GiB / no-swap VM.
+
+**Flag set**
+
+- `configs/common/mozconfig` (when `ZEN_RELEASE` is unset):
+  - `ac_add_options --disable-lto`
+  - `mk_add_options MOZ_MAKE_FLAGS="-j1"`
+  - `export MOZ_LTO=0`
+- Env: `MOZ_LTO=0 CARGO_PROFILE_RELEASE_LTO=false CARGO_INCREMENTAL=0`
+- Command: `npm run build -- --jobs 1`
+
+Last resort if this still OOMs: `ac_add_options --disable-optimize`.
