@@ -41,6 +41,34 @@ or toolbar.
 `[zen-private-window]` and `[zen-unsynced-window]` blocks in `zen-theme.css`
 are left exactly as upstream.
 
+## S2 — chrome fills stay original
+
+S2 bounce: green is **only** on the selected tab (18% wash + context line), the
+active workspace (via the existing primary lever), and CTAs (primary buttons /
+welcome start). Sidebar, toolbar, and urlbar fills stay the original Zen
+neutrals. Do not claim those surfaces get a visible green mix.
+
+Original fill tokens in `zen-theme.css` (confirmed, not retinted):
+
+| Token | Original value |
+| --- | --- |
+| `--zen-main-browser-background` | `light-dark(rgb(235, 235, 235), #1b1b1b)` |
+| `--zen-urlbar-background` | 3% / 4% primary mix |
+| `--zen-colors-tertiary` | 2% / 1% mix |
+| `--zen-sidebar-notification-bg` | 5% mix |
+
+Added tokens (not fill tints): `--zen-on-accent-color: #FFFFFF` and
+`--zen-tab-selected-bg` (18% primary wash). Urlbar: 1px `#21A038` focus/breakout
+outline in `zen-sber-theme.css` only — **no** `#urlbar[zen-newtab]` fill or
+inset box-shadow. Welcome title stays upstream
+(`#zen-welcome-start { --zen-primary-color: light-dark(black, white); }`);
+CTA paint is `.footer-button.primary` / `#zen-welcome-start-button` in
+`zen-sber-theme.css`.
+
+**Build status (no new compile):** last known blocker is 15 GiB / no-swap OOM
+during `gkrust` LTO on `npm run build -- --jobs 2`. No artifact —
+`engine/obj-x86_64-pc-linux-gnu/dist/bin/zen` was never produced.
+
 ## Official commands
 
 From the repository root, after installing the [basic requirements](https://docs.zen-browser.app/contribute/desktop/building)
@@ -248,4 +276,8 @@ cargo 1.94.1 (29ea6fb6a 2026-03-24)
 - `gmake -f client.mk -j2 -s` is compiling (Rust crates + C++ stubs)
 - Memory after ~3 min of compile: ~4 GiB used / ~11 GiB available
 
-A full Firefox/Zen compile on 4 cores / 15 GiB can take hours and may OOM at LTO link. If this VM cannot finish, the blocker will be recorded here (command, exit code, last error). If it finishes, the artifact path will be recorded (`engine/obj-x86_64-pc-linux-gnu/dist/bin/zen`).
+**Did not finish.** `gkrust` LTO (`rustc -Clto -C codegen-units=1`, ~12.6 GiB RSS)
+plus `clang++` exhausted the 15 GiB / no-swap VM. The pod was terminated
+(`exit 4294967295`). **No artifact:**
+`engine/obj-x86_64-pc-linux-gnu/dist/bin/zen` was never produced. S2 is CSS-only;
+no new compile was started.

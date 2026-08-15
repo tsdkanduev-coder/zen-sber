@@ -6,18 +6,36 @@
  * Pasteable Zen Sber userChrome.css (designer map).
  */
 
-:root { --zen-primary-color: #21A038 !important; }
+:root {
+  --zen-primary-color: #21A038 !important;
+  --zen-on-accent-color: #FFFFFF !important;
+  --zen-tab-selected-bg: color-mix(in srgb, var(--zen-primary-color) 18%, transparent);
+}
 :root {
   --in-content-primary-button-background: #21A038 !important;
   --in-content-primary-button-background-hover: color-mix(in srgb, #21A038 88%, black) !important;
   --in-content-primary-button-background-active: color-mix(in srgb, #21A038 76%, black) !important;
-  --in-content-primary-button-text-color: #FFFFFF !important;
-  --button-primary-color: #FFFFFF !important;
-  --button-text-color-primary: #FFFFFF !important;
+  --in-content-primary-button-text-color: var(--zen-on-accent-color) !important;
+  --button-primary-color: var(--zen-on-accent-color) !important;
+  --button-text-color-primary: var(--zen-on-accent-color) !important;
 }
 .tabbrowser-tab[selected] .tab-background,
 .tabbrowser-tab[visuallyselected] .tab-background {
-  background: color-mix(in srgb, var(--zen-primary-color) 18%, transparent) !important;
+  background: var(--zen-tab-selected-bg) !important;
 }
 .tabbrowser-tab[selected] .tab-context-line { background-color: #21A038 !important; }
 #urlbar[focused], #urlbar[breakout][breakout-extend] { outline: 1px solid #21A038; }
+
+.footer-button.primary,
+#zen-welcome-start-button {
+  background: #21A038 !important;
+  color: var(--zen-on-accent-color) !important;
+}
+.footer-button.primary:hover,
+#zen-welcome-start-button:hover {
+  background: color-mix(in srgb, #21A038 88%, black) !important;
+}
+.footer-button.primary:active,
+#zen-welcome-start-button:active {
+  background: color-mix(in srgb, #21A038 76%, black) !important;
+}
