@@ -290,6 +290,7 @@ Theme unchanged. Goal is a binary on the same 15 GiB / no-swap VM.
 
 - `configs/common/mozconfig` (when `ZEN_RELEASE` is unset):
   - `ac_add_options --disable-lto`
+  - `ac_add_options --disable-release` (154 implies `--enable-release`, which still passes rustc `-Clto` to gkrust; this sets `DEVELOPER_OPTIONS` so rust.mk uses `-Clto=off`)
   - `mk_add_options MOZ_MAKE_FLAGS="-j1"`
   - `export MOZ_LTO=0`
 - Env: `MOZ_LTO=0 CARGO_PROFILE_RELEASE_LTO=false CARGO_INCREMENTAL=0`
