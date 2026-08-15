@@ -156,4 +156,28 @@ added 314 packages, and audited 315 packages in 3s
 
 ### 3. `npm run init` (official download + import + bootstrap)
 
-In progress. Log: `/tmp/zen-sber-init.log`
+**Exit: 0.** Log: `/tmp/zen-sber-init.log`
+
+- Surfer unpacked cached `.surfer/engine/firefox-154.0.source.tar.xz` (candidate 154.0) to `/workspace/engine`, branch `zen_sber`.
+- Banner: `You should be ready to make changes to Zen Sber.`
+- Import applied 2 branding patches, 4 folder patches, 247 git patches.
+- Theme still present: `engine/zen/common/styles/zen-theme.css` `--zen-primary-color: #21A038`; `pref("zen.theme.accent-color", "#21A038")` in `engine/browser/app/profile/zen.js`.
+- Bootstrap: `orjson` / `rtoml` pip installs skipped (non-fatal); installed watchman, clang, sccache, sysroot, nasm, cbindgen, wasm sysroot, dump_syms, etc.
+- Last lines:
+
+```
+Your version of Rust (1.94.1) is new enough.
+Rust supports x86_64-unknown-linux-gnu targets.
+Your system should be ready to build Firefox for Desktop!
+```
+
+### 4. `python3 ./scripts/update_en_US_packs.py`
+
+**Exit: 0.** Copied 12 `locales/en-US/...` files including `zen-welcome.ftl` into `engine/browser/locales/en-US/`.
+
+### 5. `npm run build -- --jobs 2` (`surfer build` → `mach build -j2`)
+
+Starting. Official docs recommend `--jobs 2` when a build sticks or freezes; previous unrestricted compile OOM-killed this 15 GiB / no-swap class of VM.
+
+- Log: `/tmp/zen-sber-build.log`
+- Expected artifact: `engine/obj-x86_64-pc-linux-gnu/dist/bin/zen`
