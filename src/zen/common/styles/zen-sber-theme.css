@@ -1,0 +1,21 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+:root { --zen-primary-color: #21A038 !important; }
+:root {
+  --in-content-primary-button-background: #21A038 !important;
+  --in-content-primary-button-background-hover: color-mix(in srgb, #21A038 88%, black) !important;
+  --in-content-primary-button-background-active: color-mix(in srgb, #21A038 76%, black) !important;
+  --in-content-primary-button-text-color: #FFFFFF !important;
+  --button-primary-color: #FFFFFF !important;
+  --button-text-color-primary: #FFFFFF !important;
+}
+.tabbrowser-tab[selected] .tab-background,
+.tabbrowser-tab[visuallyselected] .tab-background {
+  background: color-mix(in srgb, var(--zen-primary-color) 18%, transparent) !important;
+}
+.tabbrowser-tab[selected] .tab-context-line { background-color: #21A038 !important; }
+#urlbar[focused], #urlbar[breakout][breakout-extend] { outline: 1px solid #21A038; }

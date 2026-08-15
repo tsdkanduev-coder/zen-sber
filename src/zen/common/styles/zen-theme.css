@@ -10,13 +10,9 @@
 
 :host(:is(.anonymous-content-host, notification-message)),
 :root {
-  /* Default values.
-   * Zen Sber brand tokens: only #21A038 (green) and #FFFFFF (on-accent).
-   * All other chrome tints are color-mix from these plus existing Zen neutrals.
-   */
+  /* Default values */
   --zen-border-radius: 7px;
   --zen-primary-color: #21A038;
-  --zen-on-accent-color: #FFFFFF;
 
   --zen-background-opacity: 1;
 
@@ -37,8 +33,8 @@
     color-mix(in srgb, var(--zen-primary-color) 30%, var(--zen-branding-bg) 70%)
   );
   --zen-colors-tertiary: light-dark(
-    color-mix(in srgb, var(--zen-primary-color) 6%, white 94%),
-    color-mix(in srgb, var(--zen-primary-color) 4%, var(--zen-branding-bg) 96%)
+    color-mix(in srgb, var(--zen-primary-color) 2%, white 98%),
+    color-mix(in srgb, var(--zen-primary-color) 1%, var(--zen-branding-bg) 99%)
   );
 
   --zen-colors-hover-bg: light-dark(
@@ -65,25 +61,29 @@
 
   --zen-dialog-background: light-dark(#fafbff, #1c1c1c);
   --zen-urlbar-background: light-dark(
-    color-mix(in srgb, var(--zen-primary-color) 8%, #f4f4f4 92%),
-    color-mix(in srgb, var(--zen-primary-color) 10%, rgb(24, 24, 24) 90%)
+    color-mix(in srgb, var(--zen-primary-color) 3%, #f4f4f4 97%),
+    color-mix(in srgb, var(--zen-primary-color) 4%, rgb(24, 24, 24) 96%)
   );
 
   --zen-secondary-btn-color: var(--zen-colors-primary-foreground);
   --panel-separator-zap-gradient: none !important;
 
-  --in-content-primary-button-background: var(--zen-primary-color) !important;
+  --in-content-primary-button-background: color-mix(
+    in srgb,
+    var(--zen-primary-color) 40%,
+    var(--zen-branding-bg-reverse)
+  ) !important;
   --in-content-primary-button-background-hover: color-mix(
     in srgb,
-    var(--zen-primary-color) 88%,
-    var(--zen-on-accent-color)
+    var(--zen-primary-color) 45%,
+    var(--zen-branding-bg-reverse)
   ) !important;
   --in-content-primary-button-background-active: color-mix(
     in srgb,
-    var(--zen-primary-color) 80%,
-    var(--zen-on-accent-color)
+    var(--zen-primary-color) 50%,
+    var(--zen-branding-bg-reverse)
   ) !important;
-  --in-content-primary-button-text-color: var(--zen-on-accent-color) !important;
+  --in-content-primary-button-text-color: var(--zen-branding-bg) !important;
   --in-content-primary-button-border-color: transparent !important;
   --in-content-primary-button-border-hover: transparent !important;
   --in-content-primary-button-border-active: var(--zen-colors-border) !important;
@@ -202,10 +202,7 @@
   --zen-hidden-toolbar-transition: var(--zen-hidden-toolbar-transition-duration) ease-in-out;
 
   /* XUL */
-  --zen-main-browser-background: light-dark(
-    color-mix(in srgb, var(--zen-primary-color) 6%, rgb(235, 235, 235)),
-    color-mix(in srgb, var(--zen-primary-color) 8%, #1b1b1b)
-  );
+  --zen-main-browser-background: light-dark(rgb(235, 235, 235), #1b1b1b);
   --zen-main-browser-background-toolbar: var(--zen-main-browser-background);
 
   --browser-area-z-index-toolbox: 2 !important;
@@ -261,15 +258,8 @@
   /* Sidebar Notifications */
   --zen-sidebar-notification-bg: color-mix(
     in srgb,
-    var(--zen-primary-color) 12%,
+    var(--zen-primary-color) 5%,
     light-dark(white, black)
-  );
-
-  /* Selected tab / new-tab chip: brand green must read in both schemes */
-  --zen-tab-selected-bg: color-mix(
-    in srgb,
-    var(--zen-primary-color) 22%,
-    light-dark(var(--zen-on-accent-color), transparent)
   );
   --zen-sidebar-notification-shadow: 0 0 6px light-dark(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
   --zen-sidebar-notification-outline: 1px solid light-dark(transparent, rgba(255, 255, 255, 0.1));
@@ -354,3 +344,4 @@
 }
 
 %include zen-buttons.css
+%include zen-sber-theme.css

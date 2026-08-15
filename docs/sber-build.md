@@ -21,8 +21,25 @@ Official docs:
 
 - Working name: **Zen Sber** (`surfer.json` `name` / release `brand*Name`)
 - App id / binary remain `zen` (path-safe)
-- Accent: `#21A038`, on-accent: `#FFFFFF`
 - Existing Zen wordmarks stay; no official Sber logo lockups
+
+## Designer map
+
+The chrome theme is **one lever**. Zen derives the rest. Do not invent another
+palette, do not invert primary in dark, and do not paint a solid green sidebar
+or toolbar.
+
+| Piece | Role |
+| --- | --- |
+| `--zen-primary-color: #21A038` | The only intentional token change in `src/zen/common/styles/zen-theme.css` (replaces upstream `AccentColor`). Derived mixes stay upstream. |
+| `src/zen/common/styles/zen-sber-theme.css` | Compile-time `%include` from `zen-theme.css`. Forces on-accent `#FFFFFF` on primary buttons; hover/pressed `color-mix(in srgb, #21A038 88%\|76%, black)`; selected tab = 18% primary wash + `.tab-context-line #21A038`; urlbar focus = 1px `#21A038` outline. |
+| `docs/sber-userChrome.css` | Same chrome block, pasteable as profile `userChrome.css`. |
+| `src/zen/common/styles/userContent.css` | New tab **only** (`about:newtab` / `about:home`). Quiet page, one green search button, no Sber logo. Loaded as `nsIStyleSheetService.USER_SHEET`. |
+| `docs/sber-userContent.css` | Same new-tab CSS, pasteable as profile `userContent.css`. |
+| `prefs/zen/theme.yaml` `zen.theme.accent-color: "#21A038"` | Runtime: `zenThemeModifier.js` sets `--zen-primary-color` from this pref. |
+
+`[zen-private-window]` and `[zen-unsynced-window]` blocks in `zen-theme.css`
+are left exactly as upstream.
 
 ## Official commands
 
