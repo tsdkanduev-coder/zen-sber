@@ -1,0 +1,52 @@
+diff --git a/services/settings/RemoteSettingsClient.sys.mjs b/services/settings/RemoteSettingsClient.sys.mjs
+index f4f9b1c0bc..ca860fbf02 100644
+--- a/services/settings/RemoteSettingsClient.sys.mjs
++++ b/services/settings/RemoteSettingsClient.sys.mjs
+@@ -351,6 +351,11 @@ export class RemoteSettingsClient extends EventEmitter {
+     // This attribute allows signature verification to be disabled, when running tests
+     // or when pulling data from a dev server.
+     this.verifySignature = AppConstants.REMOTE_SETTINGS_VERIFY_SIGNATURE;
++    // Every collection can fail signature after first paint. The rust
++    // RemoteSettingsClient::sync path still .expect()s in this libxul
++    // (MozCrashReason=explicit panic). Never verify here: JS cannot
++    // catch that abort, and the native verifier can GenerateDump.
++    this.verifySignature = false;
+   }
+ 
+   #lazy = XPCOMUtils.declareLazy({
+@@ -878,7 +883,17 @@ export class RemoteSettingsClient extends EventEmitter {
+             // If the signature fails again, or if an error occured during wiping out the
+             // local data, then we report it as a *signature retry* error.
+             reportStatus = lazy.UptakeTelemetry.STATUS.SIGNATURE_RETRY_ERROR;
+-            throw ex;
++            lazy.console.warn(
++              `${this.identifier} Signature retry failed; keeping local/dump data`,
++              ex
++            );
++            // Do not throw: a failed remote signature must not kill page load.
++            syncResult = {
++              current: localRecords || [],
++              created: [],
++              updated: [],
++              deleted: [],
++            };
+           }
+         } else {
+           // The sync has thrown for other reason than signature verification.
+@@ -1275,6 +1290,16 @@ export class RemoteSettingsClient extends EventEmitter {
+               await this.db.clear();
+             }
+           }
++          lazy.console.warn(
++            `${this.identifier} Signature failed after retry; not fatal`
++          );
++          // Keep dump/local data. Throwing here used to abort page load.
++          return {
++            current: (await this.db.list()).map(r => this._cleanLocalFields(r)),
++            created: [],
++            updated: [],
++            deleted: [],
++          };
+         }
+         throw e;
+       }

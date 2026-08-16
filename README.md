@@ -6,7 +6,9 @@
 <!-- TODO: Get a job -->
 <img src="./docs/assets/zen-dark.svg" width="100px" align="left">
 
-### `Zen Browser`
+### `Zen Sber`
+
+Working name for this fork of [Zen Browser](https://github.com/zen-browser/desktop). Chrome uses Sber brand green `#21A038` with on-accent `#FFFFFF` (light and dark). No official Sber logo lockups. Build notes: [docs/sber-build.md](./docs/sber-build.md).
 
 [![Downloads](https://img.shields.io/github/downloads/zen-browser/desktop/total.svg)](https://github.com/zen-browser/desktop/releases)
 [![Crowdin](https://badges.crowdin.net/zen-browser/localized.svg)](https://crowdin.com/project/zen-browser)

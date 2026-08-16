@@ -1,1 +1,21 @@
-<svg width="320" height="130" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="100" x="10" y="10" style="fill:rgb(0,0,255);stroke-width:3;stroke:red" />Sorry, your browser does not support inline SVG.</svg> 
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Zen Sber app mark: dark squircle is the icon shape. No square frame. -->
+  <defs>
+    <clipPath id="icon">
+      <rect width="1024" height="1024" rx="230"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#icon)">
+    <rect width="1024" height="1024" rx="230" fill="#121212"/>
+    <path fill="#21A038" d="M262 762
+      A 500 500 0 0 1 762 262
+      L 762 762
+      Z"/>
+    <path fill="#FFFFFF" d="M308 716
+      A 470 470 0 0 1 716 308
+      C 722 314 716 322 710 318
+      A 454 454 0 0 0 322 702
+      C 316 712 300 724 308 716
+      Z"/>
+  </g>
+</svg>

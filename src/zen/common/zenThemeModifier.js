@@ -42,6 +42,19 @@
         window.location.href == "chrome://browser/content/browser.xhtml";
       this.listenForEvents();
       this.updateAllThemeBasics();
+      this.loadSberUserContentSheet();
+    },
+
+    loadSberUserContentSheet() {
+      const sss = Cc["@mozilla.org/content/style-sheet-service;1"].getService(
+        Ci.nsIStyleSheetService
+      );
+      const uri = Services.io.newURI(
+        "chrome://browser/content/zen-styles/userContent.css"
+      );
+      if (!sss.sheetRegistered(uri, Ci.nsIStyleSheetService.USER_SHEET)) {
+        sss.loadAndRegisterSheet(uri, Ci.nsIStyleSheetService.USER_SHEET);
+      }
     },
 
     listenForEvents() {

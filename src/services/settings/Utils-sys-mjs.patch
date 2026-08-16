@@ -1,0 +1,22 @@
+diff --git a/services/settings/Utils.sys.mjs b/services/settings/Utils.sys.mjs
+--- a/services/settings/Utils.sys.mjs
++++ b/services/settings/Utils.sys.mjs
+@@ -119,13 +119,11 @@
+   log,
+ 
+   get shouldSkipRemoteActivity() {
+-    if (
+-      (lazy.isRunningTests || Cu.isInAutomation) &&
+-      this.SERVER_URL == "data:,#remote-settings-dummy/v1"
+-    ) {
+-      return true;
+-    }
+-    return Services.policies?.isAllowed("remoteSettings") === false;
++    // This libxul still .expect()s in rust RemoteSettingsClient::sync
++    // after a signature retry (MozCrashReason=explicit panic). Idle
++    // about:newtab (30–60s) plus the delayed RS poll is dump 086fed45.
++    // Never poll or sync remotely; dumps and local data stay available.
++    return true;
+   },
+ 
+   get CERT_CHAIN_ROOT_IDENTIFIER() {

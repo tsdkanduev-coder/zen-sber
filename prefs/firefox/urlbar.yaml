@@ -36,6 +36,14 @@
   value: false
   locked: true
 
+# Rust Suggest / SharedRemoteSettingsService.sync() can hit
+# remote_settings client.rs reset_storage().expect() after a
+# signature retry. That is an explicit gkrust panic on idle
+# about:newtab (086fed45), not only first-nav.
+- name: browser.urlbar.quicksuggest.rustEnabled
+  value: false
+  locked: true
+
 - name: browser.urlbar.suggest.quicksuggest.sponsored
   value: false
   locked: true

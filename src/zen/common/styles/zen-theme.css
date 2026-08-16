@@ -12,7 +12,8 @@
 :root {
   /* Default values */
   --zen-border-radius: 7px;
-  --zen-primary-color: AccentColor;
+  --zen-primary-color: #21A038;
+  --zen-on-accent-color: #FFFFFF;
 
   --zen-background-opacity: 1;
 
@@ -202,6 +203,7 @@
   --zen-hidden-toolbar-transition: var(--zen-hidden-toolbar-transition-duration) ease-in-out;
 
   /* XUL */
+  /* S2: sidebar/toolbar stay untinted; green only on selected tab, active workspace, CTA. */
   --zen-main-browser-background: light-dark(rgb(235, 235, 235), #1b1b1b);
   --zen-main-browser-background-toolbar: var(--zen-main-browser-background);
 
@@ -254,6 +256,7 @@
 
   /* Define tab hover background color */
   --tab-background-color-hover: var(--toolbarbutton-hover-background);
+  --zen-tab-selected-bg: color-mix(in srgb, var(--zen-primary-color) 18%, transparent);
 
   /* Sidebar Notifications */
   --zen-sidebar-notification-bg: color-mix(
@@ -344,3 +347,4 @@
 }
 
 %include zen-buttons.css
+%include zen-sber-theme.css

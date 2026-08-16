@@ -29,7 +29,7 @@
         <toolbarbutton id="PanelUI-zen-gradient-generator-color-page-left" class="toolbarbutton-1" disabled="true" />
         <hbox id="PanelUI-zen-gradient-generator-color-pages">
           <hbox>
-            <box data-lightness="90" data-algo="float" data-num-dots="1" data-position="240,240" style="background: #f4efdf;"></box>
+            <box data-lightness="40" data-algo="float" data-num-dots="1" data-position="147,195" data-accent="#21A038" style="background: #21A038;"></box>
             <box data-lightness="80" data-algo="float" data-num-dots="1" data-position="233,157" style="background: #f0b8cd;"></box>
             <box data-lightness="80" data-algo="float" data-num-dots="1" data-position="236,111" style="background: #e9c3e3;"></box>
             <box data-lightness="70" data-algo="float" data-num-dots="1" data-position="234,173" style="background: #da7682;"></box>

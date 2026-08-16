@@ -1,0 +1,19 @@
+diff --git a/browser/components/urlbar/private/SuggestBackendRust.sys.mjs b/browser/components/urlbar/private/SuggestBackendRust.sys.mjs
+index 04b2d57b4c..359de651bf 100644
+--- a/browser/components/urlbar/private/SuggestBackendRust.sys.mjs
++++ b/browser/components/urlbar/private/SuggestBackendRust.sys.mjs
+@@ -115,10 +115,10 @@ export class SuggestBackendRust extends SuggestBackend {
+     // fine. Alternatively the test harnesses could disable Suggest by default
+     // just like they set the server pref to the dummy URL, but Suggest is more
+     // than Rust suggestions.
+-    if (!lazy.Utils.shouldSkipRemoteActivity) {
+-      this.#remoteSettingsService =
+-        lazy.SharedRemoteSettingsService.rustService();
+-    }
++    // Never attach the rust RS service. Suggest ingest syncs many
++    // collections through rust RemoteSettingsClient::sync, which still
++    // .expect()s after a signature failure in this libxul.
++    this.#remoteSettingsService = null;
+   }
+ 
+   get enablingPreferences() {

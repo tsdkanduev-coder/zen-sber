@@ -107,3 +107,15 @@ ac_add_options MOZ_TELEMETRY_REPORTING=
 # Allow loading unsigned extensions
 export MOZ_REQUIRE_SIGNING=
 mk_add_options MOZ_REQUIRE_SIGNING=
+
+# Low-RAM official compile: last gkrust LTO used ~12.6 GiB RSS and killed a
+# 15 GiB / no-swap VM. Keep LTO for ZEN_RELEASE CI (block above).
+if ! test "$ZEN_RELEASE"; then
+  ac_add_options --disable-lto
+  # 154 milestone implies --enable-release, which still passes rustc -Clto
+  # (see engine/config/makefiles/rust.mk). --disable-release sets
+  # DEVELOPER_OPTIONS and rust.mk then uses -Clto=off.
+  ac_add_options --disable-release
+  mk_add_options MOZ_MAKE_FLAGS="-j1"
+  export MOZ_LTO=0
+fi

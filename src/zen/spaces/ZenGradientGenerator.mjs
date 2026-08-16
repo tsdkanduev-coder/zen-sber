@@ -243,6 +243,10 @@ export class nsZenThemePicker extends nsZenMultiWindowFeature {
         if (!rawPosition) {
           return;
         }
+        const brandAccent = target.getAttribute("data-accent");
+        if (brandAccent) {
+          Services.prefs.setStringPref("zen.theme.accent-color", brandAccent);
+        }
         const algo = target.getAttribute("data-algo");
         const lightness = target.getAttribute("data-lightness");
         const numDots = parseInt(target.getAttribute("data-num-dots"));

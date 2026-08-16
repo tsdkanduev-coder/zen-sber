@@ -1,0 +1,110 @@
+diff --git a/browser/components/backup/BackupService.sys.mjs b/browser/components/backup/BackupService.sys.mjs
+index 79193eecf6..bc1f4536d0 100644
+--- a/browser/components/backup/BackupService.sys.mjs
++++ b/browser/components/backup/BackupService.sys.mjs
+@@ -4389,49 +4389,57 @@ export class BackupService extends EventTarget {
+   async takeMeasurements() {
+     lazy.logConsole.debug("Taking Telemetry measurements");
+ 
+-    // We'll start by taking some basic BackupService state measurements.
+-    Glean.browserBackup.enabled.set(true);
+-    Glean.browserBackup.schedulerEnabled.set(lazy.scheduledBackupsPref);
+-
+-    await this.loadEncryptionState();
+-    Glean.browserBackup.pswdEncrypted.set(this.#_state.encryptionEnabled);
+-
+-    const USING_DEFAULT_DIR_PATH =
+-      lazy.backupDirPref ==
+-      PathUtils.join(
+-        BackupService.DEFAULT_PARENT_DIR_PATH,
+-        BackupService.BACKUP_DIR_NAME
+-      );
+-    Glean.browserBackup.locationOnDevice.set(USING_DEFAULT_DIR_PATH ? 1 : 2);
++    try {
++      // We'll start by taking some basic BackupService state measurements.
++      Glean.browserBackup.enabled.set(true);
++      Glean.browserBackup.schedulerEnabled.set(lazy.scheduledBackupsPref);
++
++      await this.loadEncryptionState();
++      Glean.browserBackup.pswdEncrypted.set(this.#_state.encryptionEnabled);
++
++      const parentDir = BackupService.DEFAULT_PARENT_DIR_PATH;
++      if (parentDir) {
++        const USING_DEFAULT_DIR_PATH =
++          lazy.backupDirPref ==
++          PathUtils.join(parentDir, BackupService.BACKUP_DIR_NAME);
++        Glean.browserBackup.locationOnDevice.set(USING_DEFAULT_DIR_PATH ? 1 : 2);
++      } else {
++        // No Documents/OneDrive path (fresh or locked-down environments).
++        // PathUtils.join rejects empty paths and used to abort first-window idle.
++        Glean.browserBackup.locationOnDevice.set(0);
++      }
+ 
+-    // Next, we'll measure the available disk space on the storage
+-    // device that the profile directory is on.
+-    let profileDir = await IOUtils.getFile(PathUtils.profileDir);
++      // Next, we'll measure the available disk space on the storage
++      // device that the profile directory is on.
++      let profileDir = await IOUtils.getFile(PathUtils.profileDir);
+ 
+-    let profDDiskSpaceBytes = profileDir.diskSpaceAvailable;
++      let profDDiskSpaceBytes = profileDir.diskSpaceAvailable;
+ 
+-    // Make the measurement fuzzier by rounding to the nearest 10MB.
+-    let profDDiskSpaceFuzzed = MeasurementUtils.fuzzByteSize(
+-      profDDiskSpaceBytes,
+-      10 * BYTES_IN_MEGABYTE
+-    );
++      // Make the measurement fuzzier by rounding to the nearest 10MB.
++      let profDDiskSpaceFuzzed = MeasurementUtils.fuzzByteSize(
++        profDDiskSpaceBytes,
++        10 * BYTES_IN_MEGABYTE
++      );
+ 
+-    // And then record the value in kilobytes, since that's what everything
+-    // else is going to be measured in.
+-    Glean.browserBackup.profDDiskSpace.set(
+-      profDDiskSpaceFuzzed / BYTES_IN_KILOBYTE
+-    );
++      // And then record the value in kilobytes, since that's what everything
++      // else is going to be measured in.
++      Glean.browserBackup.profDDiskSpace.set(
++        profDDiskSpaceFuzzed / BYTES_IN_KILOBYTE
++      );
+ 
+-    // Measure the size of each file we are going to backup.
+-    for (let resourceClass of this.#resources.values()) {
+-      try {
+-        await new resourceClass().measure(PathUtils.profileDir);
+-      } catch (e) {
+-        lazy.logConsole.error(
+-          `Failed to measure for resource: ${resourceClass.key}`,
+-          e
+-        );
++      // Measure the size of each file we are going to backup.
++      for (let resourceClass of this.#resources.values()) {
++        try {
++          await new resourceClass().measure(PathUtils.profileDir);
++        } catch (e) {
++          lazy.logConsole.error(
++            `Failed to measure for resource: ${resourceClass.key}`,
++            e
++          );
++        }
+       }
++    } catch (e) {
++      lazy.logConsole.error("takeMeasurements failed", e);
+     }
+   }
+ 
+@@ -4961,7 +4969,9 @@ export class BackupService extends EventTarget {
+   async onIdle() {
+     lazy.logConsole.debug("Saw idle callback");
+     if (!this.#takenMeasurements) {
+-      this.takeMeasurements();
++      this.takeMeasurements().catch(e => {
++        lazy.logConsole.error("takeMeasurements failed", e);
++      });
+       this.#takenMeasurements = true;
+     }
+ 

@@ -102,3 +102,23 @@
 
 - name: browser.preonboarding.enabled
   value: false
+
+# Fresh-profile BackupService.init() races Places / session collect and minidumps.
+- name: browser.backup.enabled
+  value: false
+
+# Failed remote search-config-v2 signature must not kill first-run after paint.
+- name: services.settings.verify_signature
+  value: false
+
+# Idle about:newtab (30–60s) plus the delayed RS poll still reaches
+# rust RemoteSettingsClient::sync .expect() in this libxul (086fed45).
+# Stay on dumps. Utils.shouldSkipRemoteActivity is hard-true as well.
+- name: services.settings.skip_remote_activity
+  value: true
+  locked: true
+
+# Delayed-startup UnsubmittedCrashHandler pulls crash-reports-ondemand.
+# Skip that Remote Settings client when the crashreporter helper is absent.
+- name: browser.crashReports.onDemand
+  value: false

@@ -1,0 +1,16 @@
+diff --git a/toolkit/components/nimbus/ExperimentAPI.sys.mjs b/toolkit/components/nimbus/ExperimentAPI.sys.mjs
+index b7a013c9b5..5a61a30336 100644
+--- a/toolkit/components/nimbus/ExperimentAPI.sys.mjs
++++ b/toolkit/components/nimbus/ExperimentAPI.sys.mjs
+@@ -478,7 +478,10 @@ export const ExperimentAPI = new (class {
+   }
+ 
+   get enabled() {
+-    return this.labsEnabled || this.rolloutsEnabled || this.studiesEnabled;
++    // FirefoxLabs policy keeps Nimbus "on" even when studies/rollouts are
++    // off. enable() then reads nimbus-desktop-experiments (EmptyDatabaseError
++    // on Walk10) and can still reach rust expect() on idle about:newtab.
++    return false;
+   }
+ 
+   get labsEnabled() {

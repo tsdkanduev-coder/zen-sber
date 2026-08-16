@@ -1,0 +1,25 @@
+diff --git a/toolkit/components/crashes/RemoteSettingsCrashPull.sys.mjs b/toolkit/components/crashes/RemoteSettingsCrashPull.sys.mjs
+index feff89a813..2e7f0b9bb6 100644
+--- a/toolkit/components/crashes/RemoteSettingsCrashPull.sys.mjs
++++ b/toolkit/components/crashes/RemoteSettingsCrashPull.sys.mjs
+@@ -66,13 +66,19 @@ export var RemoteSettingsCrashPull = {
+ 
+     try {
+       this._client = lazy.RemoteSettings(REMOTE_SETTINGS_CRASH_COLLECTION);
++      this._client.verifySignature = false;
+       this._client.on("sync", this._remoteSettingsCallback);
+ 
+       let data = await this._client.get();
+       await this.checkInterestingCrashesAndMaybeNotify(data);
+     } catch (ex) {
++      // Missing crashreporter / failed crash-reports-ondemand signature
++      // must not abort first-run after first paint.
+       if (!(ex instanceof lazy.RemoteSettingsClient.UnknownCollectionError)) {
+-        throw ex;
++        console.warn(
++          "RemoteSettingsCrashPull: crash-reports-ondemand unavailable",
++          ex
++        );
+       }
+     }
+   },

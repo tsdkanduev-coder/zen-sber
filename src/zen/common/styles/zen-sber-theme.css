@@ -1,0 +1,35 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+:root { --zen-primary-color: #21A038 !important; }
+:root {
+  --in-content-primary-button-background: #21A038 !important;
+  --in-content-primary-button-background-hover: color-mix(in srgb, #21A038 88%, black) !important;
+  --in-content-primary-button-background-active: color-mix(in srgb, #21A038 76%, black) !important;
+  --in-content-primary-button-text-color: var(--zen-on-accent-color) !important;
+  --button-primary-color: var(--zen-on-accent-color) !important;
+  --button-text-color-primary: var(--zen-on-accent-color) !important;
+}
+.tabbrowser-tab[selected] .tab-background,
+.tabbrowser-tab[visuallyselected] .tab-background {
+  background: var(--zen-tab-selected-bg) !important;
+}
+.tabbrowser-tab[selected] .tab-context-line { background-color: #21A038 !important; }
+#urlbar[focused], #urlbar[breakout][breakout-extend] { outline: 1px solid #21A038; }
+
+.footer-button.primary,
+#zen-welcome-start-button {
+  background: #21A038 !important;
+  color: var(--zen-on-accent-color) !important;
+}
+.footer-button.primary:hover,
+#zen-welcome-start-button:hover {
+  background: color-mix(in srgb, #21A038 88%, black) !important;
+}
+.footer-button.primary:active,
+#zen-welcome-start-button:active {
+  background: color-mix(in srgb, #21A038 76%, black) !important;
+}

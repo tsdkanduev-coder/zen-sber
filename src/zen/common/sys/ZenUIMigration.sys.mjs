@@ -12,7 +12,7 @@ ChromeUtils.defineESModuleGetters(lazy, {
 
 class nsZenUIMigration {
   PREF_NAME = "zen.ui.migration.version";
-  MIGRATION_VERSION = 6;
+  MIGRATION_VERSION = 7;
 
   init(isNewProfile) {
     if (!isNewProfile) {
@@ -111,6 +111,13 @@ class nsZenUIMigration {
 
   _migrateV5() {
     Services.prefs.setBoolPref("zen.site-data-panel.show-callout", true);
+  }
+
+  _migrateV7() {
+    const accent = Services.prefs.getStringPref("zen.theme.accent-color", "");
+    if (accent === "AccentColor" || accent.startsWith("system")) {
+      Services.prefs.setStringPref("zen.theme.accent-color", "#21A038");
+    }
   }
 
   _migrateV6() {

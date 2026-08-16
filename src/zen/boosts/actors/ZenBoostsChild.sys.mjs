@@ -74,6 +74,11 @@ export class ZenBoostsChild extends JSWindowActorChild {
     this.#applyBoostForPageIfAvailable();
   }
 
+  // DOMWindowCreated is registered only so this actor is constructed for
+  // each content window. Without handleEvent, Gecko throws
+  // "Property 'handleEvent' is not callable" on first-run about:blank.
+  handleEvent(_event) {}
+
   didDestroy() {
     if (this.#currentState === ZenBoostsChild.STATES.ZAP) {
       this.disableZapMode();

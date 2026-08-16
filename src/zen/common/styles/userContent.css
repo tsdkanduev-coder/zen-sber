@@ -1,0 +1,56 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ */
+
+@-moz-document url("about:newtab"), url("about:home") {
+  :root,
+  html,
+  body,
+  .outer-wrapper,
+  .activity-stream {
+    background-color: #FFFFFF !important;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root,
+    html,
+    body,
+    .outer-wrapper,
+    .activity-stream {
+      background-color: color-mix(in srgb, #21A038 6%, black) !important;
+    }
+  }
+
+  /* Quiet page: hide logo/wordmark and extra sections. No official Sber logo. */
+  .logo-and-wordmark,
+  .logo-and-wordmark-wrapper,
+  .top-sites,
+  .top-sites-list,
+  .top-site-outer,
+  .discovery-stream,
+  .ds-outer,
+  .personalize-button,
+  .personalizeButtonWrapper,
+  .weather,
+  .weatherCard,
+  .info-option-inner,
+  .customize-menu {
+    display: none !important;
+  }
+
+  /* One green button: search submit */
+  .search-button {
+    background: #21A038 !important;
+    color: #FFFFFF !important;
+  }
+
+  .search-button:hover {
+    background: color-mix(in srgb, #21A038 88%, black) !important;
+  }
+
+  .search-button:active {
+    background: color-mix(in srgb, #21A038 76%, black) !important;
+  }
+}

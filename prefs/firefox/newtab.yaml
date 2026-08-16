@@ -8,6 +8,13 @@
 - name: browser.newtabpage.activity-stream.feeds.section.topstories
   value: false
 
+# newtab@mozilla.org Discovery Stream / Merino ingest on idle about:newtab.
+- name: browser.newtabpage.activity-stream.discoverystream.enabled
+  value: false
+
+- name: browser.newtabpage.activity-stream.feeds.discoverystreamfeed
+  value: false
+
 - name: browser.topsites.contile.enabled
   value: false
 

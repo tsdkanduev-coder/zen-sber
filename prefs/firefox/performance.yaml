@@ -10,3 +10,20 @@
   condition: "defined(XP_WIN) || defined(XP_DARWIN) || defined(MOZ_WIDGET_GTK)"
   value: "@cond"
   mirror: once
+
+# Idle about:newtab on llvmpipe uses Software WebRender (SWGL). That
+# rust backend rust-panics on the Renderer thread after ~2–3 minutes
+# (MozCrashReason=explicit panic, SIGSEGV @ 0, dump 75aae051 / 0e5eaeb6).
+# Force hardware WR onto the GL driver (mesa/llvmpipe) instead of SWGL.
+- name: gfx.webrender.all
+  value: true
+
+- name: gfx.webrender.reject-software-driver
+  condition: "defined(MOZ_WIDGET_GTK)"
+  value: false
+
+- name: gfx.webrender.software
+  value: false
+
+- name: layers.acceleration.force-enabled
+  value: true
