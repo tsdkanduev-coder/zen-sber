@@ -1,0 +1,90 @@
+diff --git a/toolkit/components/search/SearchService.sys.mjs b/toolkit/components/search/SearchService.sys.mjs
+index 524bd68741..4d4b1d0bfa 100644
+--- a/toolkit/components/search/SearchService.sys.mjs
++++ b/toolkit/components/search/SearchService.sys.mjs
+@@ -1598,7 +1598,18 @@ export const SearchService = new (class SearchService {
+ 
+       initSection = "FetchEngines";
+       this.#maybeThrowErrorInTest(initSection);
+-      const refinedConfig = await this._fetchEngineSelectorEngines();
++      let refinedConfig;
++      try {
++        refinedConfig = await this._fetchEngineSelectorEngines();
++      } catch (ex) {
++        // First navigation inits SearchService via the urlbar. A failed
++        // search-config-v2 fetch must not abort page load.
++        lazy.logConsole.error(
++          "#init: search-config unavailable; continuing without app engines",
++          ex
++        );
++        refinedConfig = { engines: [] };
++      }
+ 
+       initSection = "LoadEngines";
+       this.#maybeThrowErrorInTest(initSection);
+@@ -1646,7 +1657,9 @@ export const SearchService = new (class SearchService {
+       Glean.searchService.initializationStatus.success.add();
+     } else {
+       Glean.searchService.initializationStatus.settingsCorrupt.add();
+-      this._showSearchSettingsResetNotificationBox(this.defaultEngine.name);
++      this._showSearchSettingsResetNotificationBox(
++        this.defaultEngine?.name
++      );
+     }
+     this.#initDeferredPromise.resolve();
+     this.#addObservers();
+@@ -1848,7 +1861,10 @@ export const SearchService = new (class SearchService {
+             return policyEngine;
+           }
+         }
+-        if (activePolicies.SearchEngines.Remove?.includes(defaultEngine.name)) {
++        if (
++          defaultEngine &&
++          activePolicies.SearchEngines.Remove?.includes(defaultEngine.name)
++        ) {
+           defaultEngine = null;
+         }
+       }
+@@ -1891,7 +1907,7 @@ export const SearchService = new (class SearchService {
+     lazy.logConsole.debug("#loadEngines: start");
+     this.#setDefaultFromSelector(refinedConfig);
+ 
+-    this.#loadEnginesFromConfig(refinedConfig.engines, settings);
++    this.#loadEnginesFromConfig(refinedConfig.engines || [], settings);
+ 
+     await this.#loadStartupEngines(settings);
+ 
+@@ -1902,7 +1918,7 @@ export const SearchService = new (class SearchService {
+     // override, then we don't want to show the notification box.
+     let skipDefaultChangedNotification = await this.#loadEnginesFromSettings(
+       settings,
+-      refinedConfig.engines
++      refinedConfig.engines || []
+     );
+ 
+     // If #loadEnginesFromSettings changed the default engine, then we don't
+@@ -2816,9 +2832,21 @@ export const SearchService = new (class SearchService {
+       this._settings.setMetaDataAttribute(key, value);
+     }
+ 
+-    return this.#engineSelector.fetchEngineConfiguration(
+-      searchEngineSelectorProperties
+-    );
++    try {
++      return await this.#engineSelector.fetchEngineConfiguration(
++        searchEngineSelectorProperties
++      );
++    } catch (ex) {
++      lazy.logConsole.error(
++        "_fetchEngineSelectorEngines: failed; empty engines for page load",
++        ex
++      );
++      return {
++        engines: [],
++        appDefaultEngineId: null,
++        appPrivateDefaultEngineId: null,
++      };
++    }
+   }
+ 
+   #setDefaultFromSelector(refinedConfig) {

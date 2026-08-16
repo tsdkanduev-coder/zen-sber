@@ -442,17 +442,24 @@ Reproduced: extract tarball, new `--profile`, `./zen`. Log:
 `post-show: moving tab into workspace section`, then session save.
 Window stayed open **3 minutes 19 seconds**. No minidump. Watched.
 
-### First-run search-config-v2 signature (minidump 4515c1ab)
+### Page-load search-config-v2 (minidump 4515c1ab)
 
-**Commit:** `367187b16` — Do not treat search-config-v2 signature failure as fatal
+Experience correction: `4515c1ab-deb9-a138-f133-cc7ad027415d` died on the
+**first visit to example.com**, not on startup. The window came up.
 
-Experience on `00b93c34`: window came up, then minidump after
-`main/search-config-v2 Signature verified failed. Retry from scratch`.
-The retry can native-crash the content-signature verifier.
+**Cause:** first navigation formats the urlbar (`gURLBar.formatValue` /
+`delayedStartupInit`) which calls `SearchService.init()`. That loads
+`search-config-v2`. A failed remote signature retry can native-crash the
+content-signature verifier, and an empty config used to throw
+`Failed to get engine data from Remote Settings` / Rust
+`setSearchConfig` during page load.
 
-**Fix:** disable signature verification for `search-config-v2` (and
-`services.settings.verify_signature` default false). A failed remote
-signature keeps the bundled dump and is not fatal.
+**Fix:** do not verify `search-config-v2` signatures; do not throw on
+empty/failed config; do not treat a Rust selector error as fatal. Page
+load continues without app search engines.
+
+Reproduced: extract tarball, new `--profile`, `./zen`, window up, go to
+`https://example.com`, stay up. No minidump.
 
 The product tarball still contains `zen/omni.ja` and `zen/browser/omni.ja`.
 

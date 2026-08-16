@@ -346,9 +346,17 @@ index e7e9495e56076cd112beafb8297dece4ae4cea58..330104d245ddd0956b95377082a61825
 @@ -5894,7 +6027,7 @@ ${
      // When we are in actions search mode we can show more results so
      // increase the limit.
-     let maxResults =
+    let maxResults =
 -      this.searchMode?.source != UrlbarShared.RESULT_SOURCE.ACTIONS
 +      this.searchMode?.source != UrlbarShared.RESULT_SOURCE.ZEN_ACTIONS
-         ? lazy.UrlbarPrefs.get("maxRichResults")
-         : UNLIMITED_MAX_RESULTS;
-     let options = {
+        ? lazy.UrlbarPrefs.get("maxRichResults")
+        : UNLIMITED_MAX_RESULTS;
+    let options = {
+@@ -5244,6 +5377,8 @@
+   async _updatePlaceholderFromDefaultEngine() {
+     const defaultEngine = await this._getDefaultSearchEngine();
+-    this._updatePlaceholder(defaultEngine.name);
++    if (defaultEngine?.name) {
++      this._updatePlaceholder(defaultEngine.name);
++    }
+   }

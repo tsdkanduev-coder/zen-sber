@@ -107,6 +107,6 @@
 - name: browser.backup.enabled
   value: false
 
-# Failed remote search-config-v2 signature must not kill first-run.
+# Failed remote search-config-v2 signature must not kill first page load.
 - name: services.settings.verify_signature
   value: false
