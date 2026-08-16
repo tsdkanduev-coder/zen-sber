@@ -703,7 +703,7 @@ export class nsZenSessionManager {
         this.log("Failed to arm session backup", e);
       }
       this.log(
-        `Saving Zen session data with ${sidebar.tabs?.length || 0} tabs`
+        `post-show: Saving Zen session data with ${sidebar.tabs?.length || 0} tabs`
       );
     } catch (e) {
       console.error("ZenSessionManager: Failed to save session state", e);

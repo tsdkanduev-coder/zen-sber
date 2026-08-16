@@ -420,4 +420,26 @@ Reproduced: extract tarball, new `--profile`, `./zen`. Log:
 `Reusing startup about:blank`, then `Saving Zen session data with 0 tabs`.
 No `BackupService:` lines. Window stayed open 60s+. No minidump.
 
+### First-run post-show tab move (after 00b93c34)
+
+**Commit:** (this change) — Keep first-run window alive after first paint
+
+Experience on `00b93c34`: window painted (Sber chrome on-map), then minidumped.
+`#initializeTabsStripSections` and `makeSureEmptyTabIsFirst` did `insertBefore`
+/ `TabStateFlusher.flush` on the **selected** startup tab after first paint.
+That races AsyncTabSwitcher.
+
+**Fix:** defer moving the selected startup tab until `TabSwitchDone`; do not
+flush or `insertBefore` the selected empty tab; skip `warmupTab` on the
+already-selected tab; wrap `SessionStore.getCurrentState` so a collect
+failure cannot abort the saver.
+
+The product tarball still contains `zen/omni.ja` and `zen/browser/omni.ja`.
+
+Reproduced: extract tarball, new `--profile`, `./zen`. Log:
+`post-show: deferring DOM move of selected startup tab`, then
+`post-show: workspace change finished`, then
+`post-show: moving tab into workspace section`, then session save.
+Window stayed open **3 minutes 19 seconds**. No minidump. Watched.
+
 macOS dmg / Windows exe: not built. Those need a separate OS compile; this 15 GiB VM only has the Linux tree.
