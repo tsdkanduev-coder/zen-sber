@@ -394,7 +394,7 @@ window visible, no `no such table`, no minidump.
 
 ### First-run BackupService / session save
 
-**Commit:** `ba99cd7f0` — Disable BackupService init on first-run to stop minidump
+**Commit:** `00b93c34e` — Disable BackupService init on first-run to stop minidump
 
 After empty-tab reuse (`Reusing startup about:blank`), Firefox idle runs
 `BackupService.init()`. On a fresh profile that registers Places listeners and
