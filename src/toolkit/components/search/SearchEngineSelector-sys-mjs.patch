@@ -1,0 +1,14 @@
+diff --git a/toolkit/components/search/SearchEngineSelector.sys.mjs b/toolkit/components/search/SearchEngineSelector.sys.mjs
+index 3a42b383af..8b51efbca6 100644
+--- a/toolkit/components/search/SearchEngineSelector.sys.mjs
++++ b/toolkit/components/search/SearchEngineSelector.sys.mjs
+@@ -46,6 +46,9 @@ export class SearchEngineSelector {
+     this.#remoteConfigOverrides = lazy.RemoteSettings(
+       lazy.SearchUtils.SETTINGS_OVERRIDES_KEY
+     );
++    // A failed remote search-config-v2 signature must not take down first-run.
++    this.#remoteConfig.verifySignature = false;
++    this.#remoteConfigOverrides.verifySignature = false;
+     this.#boundOnConfigurationUpdated = this._onConfigurationUpdated.bind(this);
+     this.#boundOnConfigurationOverridesUpdated =
+       this._onConfigurationOverridesUpdated.bind(this);

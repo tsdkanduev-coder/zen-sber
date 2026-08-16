@@ -442,4 +442,16 @@ Reproduced: extract tarball, new `--profile`, `./zen`. Log:
 `post-show: moving tab into workspace section`, then session save.
 Window stayed open **3 minutes 19 seconds**. No minidump. Watched.
 
+### First-run search-config-v2 signature (minidump 4515c1ab)
+
+Experience on `00b93c34`: window came up, then minidump after
+`main/search-config-v2 Signature verified failed. Retry from scratch`.
+The retry can native-crash the content-signature verifier.
+
+**Fix:** disable signature verification for `search-config-v2` (and
+`services.settings.verify_signature` default false). A failed remote
+signature keeps the bundled dump and is not fatal.
+
+The product tarball still contains `zen/omni.ja` and `zen/browser/omni.ja`.
+
 macOS dmg / Windows exe: not built. Those need a separate OS compile; this 15 GiB VM only has the Linux tree.

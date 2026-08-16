@@ -1,0 +1,57 @@
+diff --git a/services/settings/RemoteSettingsClient.sys.mjs b/services/settings/RemoteSettingsClient.sys.mjs
+index f4f9b1c0bc..944b89d4f6 100644
+--- a/services/settings/RemoteSettingsClient.sys.mjs
++++ b/services/settings/RemoteSettingsClient.sys.mjs
+@@ -351,6 +351,16 @@ export class RemoteSettingsClient extends EventEmitter {
+     // This attribute allows signature verification to be disabled, when running tests
+     // or when pulling data from a dev server.
+     this.verifySignature = AppConstants.REMOTE_SETTINGS_VERIFY_SIGNATURE;
++    // Fresh-profile first-run: a failed search-config-v2 signature retry can
++    // native-crash the content-signature verifier (minidump after first paint).
++    // Use the bundled dump instead of treating a bad remote signature as fatal.
++    if (
++      collectionName === "search-config-v2" ||
++      collectionName === "search-config-v2-overrides" ||
++      !Services.prefs.getBoolPref("services.settings.verify_signature", true)
++    ) {
++      this.verifySignature = false;
++    }
+   }
+ 
+   #lazy = XPCOMUtils.declareLazy({
+@@ -878,7 +888,17 @@ export class RemoteSettingsClient extends EventEmitter {
+             // If the signature fails again, or if an error occured during wiping out the
+             // local data, then we report it as a *signature retry* error.
+             reportStatus = lazy.UptakeTelemetry.STATUS.SIGNATURE_RETRY_ERROR;
+-            throw ex;
++            lazy.console.warn(
++              `${this.identifier} Signature retry failed; keeping local/dump data`,
++              ex
++            );
++            // Do not throw: a failed remote signature must not kill first-run.
++            syncResult = {
++              current: localRecords || [],
++              created: [],
++              updated: [],
++              deleted: [],
++            };
+           }
+         } else {
+           // The sync has thrown for other reason than signature verification.
+@@ -1275,6 +1295,16 @@ export class RemoteSettingsClient extends EventEmitter {
+               await this.db.clear();
+             }
+           }
++          lazy.console.warn(
++            `${this.identifier} Signature failed after retry; not fatal`
++          );
++          // Keep dump/local data. Throwing here used to abort first-run.
++          return {
++            current: (await this.db.list()).map(r => this._cleanLocalFields(r)),
++            created: [],
++            updated: [],
++            deleted: [],
++          };
+         }
+         throw e;
+       }

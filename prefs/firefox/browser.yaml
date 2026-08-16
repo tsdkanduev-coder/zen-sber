@@ -106,3 +106,7 @@
 # Fresh-profile BackupService.init() races Places / session collect and minidumps.
 - name: browser.backup.enabled
   value: false
+
+# Failed remote search-config-v2 signature must not kill first-run.
+- name: services.settings.verify_signature
+  value: false
