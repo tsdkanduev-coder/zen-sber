@@ -372,4 +372,24 @@ Extracted the packaged tarball on this VM and ran `./zen --no-remote --profile â
 - No `Missing chrome locale URLs`. No child SIGKILL.
 - Selected tab rendered with the S2 green wash.
 
+### First-run workspaces (fresh profile)
+
+A clean first run used to treat the empty profile as a Places â†’ session
+migration and `SELECT` from `zen_workspaces` / `zen_pins`. Those tables are
+**legacy** (old Zen stored spaces in `places.sqlite`). A new profile never
+creates them. The failed SELECT logged `no such table` and the migration path
+could abort `gZenWorkspaces` before a default Space existed.
+
+Fix (no new OS compile; JS only, then `./mach package`):
+
+- `ZenSessionManager.sys.mjs`: skip Places migration unless
+  `zen_workspaces` / `zen_pins` already exist. Fresh profile log:
+  `Fresh profile: no session spaces and no Places workspace tables`.
+- `ZenSpaceManager.mjs`: seed a default Space if the cache is empty; do not
+  read `gBrowser.selectedTab` when it is null; `changeWorkspace` no longer
+  dereferences a missing workspace.
+
+Reproduced: extract tarball, new `--profile`, `./zen` stayed up 45s+, Nightly
+window visible, no `no such table`, no minidump.
+
 macOS dmg / Windows exe: not built. Those need a separate OS compile; this 15 GiB VM only has the Linux tree.

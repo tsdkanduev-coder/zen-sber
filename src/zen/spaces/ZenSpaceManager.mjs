@@ -791,9 +791,28 @@ class nsZenWorkspaces {
     ) {
       spacesFromStore.push(...lazy.ZenSessionStore._migrationData.spaces);
     }
-    this._workspaceCache = spacesFromStore.length
-      ? [...spacesFromStore]
-      : [this.#createWorkspaceData("Space", undefined)];
+    try {
+      this._workspaceCache = spacesFromStore.length
+        ? [...spacesFromStore]
+        : [this.#createWorkspaceData("Space", undefined)];
+    } catch (e) {
+      console.error(
+        "gZenWorkspaces: Failed to seed workspace cache on first run",
+        e
+      );
+      this._workspaceCache = [
+        {
+          uuid: gZenUIManager.generateUuidv4(),
+          icon: undefined,
+          name: "Space",
+          theme: nsZenThemePicker.getTheme([]),
+          containerTabId: 0,
+        },
+      ];
+    }
+    if (!this._workspaceCache.length) {
+      this._workspaceCache = [this.#createWorkspaceData("Space", undefined)];
+    }
     this.activeWorkspace =
       aWinData.activeZenSpace || this._workspaceCache[0].uuid;
     let promise = this.#initializeWorkspaces();
@@ -821,7 +840,8 @@ class nsZenWorkspaces {
   }
 
   #initializeWorkspaces() {
-    let activeWorkspace = this.getActiveWorkspace();
+    let activeWorkspace =
+      this.getActiveWorkspace() || this._workspaceCache[0];
     this.activeWorkspace = activeWorkspace?.uuid;
     try {
       if (activeWorkspace) {
@@ -1735,6 +1755,13 @@ class nsZenWorkspaces {
     workspace,
     { onInit = false, alwaysChange = false, whileScrolling = false } = {}
   ) {
+    if (!workspace?.uuid) {
+      workspace = this.getActiveWorkspaceFromCache() || this._workspaceCache[0];
+      if (!workspace?.uuid) {
+        this.log("changeWorkspace skipped: no workspace available");
+        return;
+      }
+    }
     const previousWorkspace = this.getActiveWorkspace();
     alwaysChange = alwaysChange || onInit;
     this.activeWorkspace = workspace.uuid;
@@ -1764,7 +1791,7 @@ class nsZenWorkspaces {
       this.pinnedTabsContainer || gBrowser.tabContainer.pinnedTabsContainer;
 
     this.tabContainer._invalidateCachedTabs();
-    if (!whileScrolling) {
+    if (!whileScrolling && previousWorkspace) {
       this._organizeWorkspaceStripLocations(previousWorkspace);
     }
 
@@ -1773,16 +1800,16 @@ class nsZenWorkspaces {
     const tabToSelect = await this._handleTabSelection(
       workspace,
       onInit,
-      previousWorkspace.uuid
+      previousWorkspace?.uuid
     );
     if (tabToSelect?.linkedBrowser) {
       gBrowser.warmupTab(tabToSelect);
     }
 
     // Update UI and state
-    const previousWorkspaceIndex = workspaces.findIndex(
-      w => w.uuid === previousWorkspace.uuid
-    );
+    const previousWorkspaceIndex = previousWorkspace
+      ? workspaces.findIndex(w => w.uuid === previousWorkspace.uuid)
+      : -1;
     await this.#updateWorkspaceState(workspace, onInit, tabToSelect, {
       previousWorkspaceIndex,
       previousWorkspace,
@@ -2561,7 +2588,7 @@ class nsZenWorkspaces {
   #createWorkspaceData(name, icon, containerTabId = 0) {
     if (!this.currentWindowIsSyncing) {
       containerTabId =
-        parseInt(gBrowser.selectedTab.getAttribute("usercontextid")) || 0;
+        parseInt(gBrowser.selectedTab?.getAttribute("usercontextid")) || 0;
       let label =
         ContextualIdentityService.getUserContextLabel(containerTabId) ||
         "Default";

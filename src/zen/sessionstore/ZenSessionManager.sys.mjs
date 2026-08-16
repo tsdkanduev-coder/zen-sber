@@ -150,6 +150,27 @@ export class nsZenSessionManager {
   }
 
   /**
+   * True when this profile still has the pre-session-store Places tables.
+   * A brand-new profile never has them; treating that as a migration
+   * throws "no such table: zen_workspaces" and can abort first-run.
+   */
+  async #legacyPlacesWorkspaceTablesExist() {
+    try {
+      const { PlacesUtils } = ChromeUtils.importESModule(
+        "resource://gre/modules/PlacesUtils.sys.mjs"
+      );
+      const db = await PlacesUtils.promiseDBConnection();
+      const rows = await db.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('zen_workspaces', 'zen_pins')"
+      );
+      return rows.length > 0;
+    } catch (e) {
+      this.log("Could not inspect Places for legacy workspace tables", e);
+      return false;
+    }
+  }
+
+  /**
    * Gets the spaces data from the Places database for migration.
    * This is only called once during the first run after updating
    * to a version that uses the new session manager.
@@ -162,7 +183,24 @@ export class nsZenSessionManager {
       const db = await PlacesUtils.promiseDBConnection();
       let data = {};
       let rows = [];
+      const existing = await db.execute(
+        "SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('zen_workspaces', 'zen_pins')"
+      );
+      const tableNames = new Set(
+        existing.map(row => row.getResultByName("name"))
+      );
+      if (!tableNames.has("zen_workspaces") && !tableNames.has("zen_pins")) {
+        this.log(
+          "No legacy Places workspace tables; skipping DB migration (fresh profile)"
+        );
+        this._migrationData = { spaces: [], pins: [] };
+        return;
+      }
       try {
+        if (!tableNames.has("zen_workspaces")) {
+          data.spaces = [];
+          throw new Error("zen_workspaces table is absent");
+        }
         rows = await db.execute(
           "SELECT * FROM zen_workspaces ORDER BY created_at ASC"
         );
@@ -190,6 +228,10 @@ export class nsZenSessionManager {
         );
       }
       try {
+        if (!tableNames.has("zen_pins")) {
+          data.pins = [];
+          throw new Error("zen_pins table is absent");
+        }
         rows = await db.execute("SELECT * FROM zen_pins ORDER BY position ASC");
         data.pins = rows.map(row => ({
           uuid: row.getResultByName("uuid"),
@@ -296,15 +338,22 @@ export class nsZenSessionManager {
       !this.#sidebarWithoutCloning.spaces?.length &&
       !this._shouldRunMigration
     ) {
-      this.log(
-        "No spaces data found in session file, running migration",
-        this.#sidebarWithoutCloning
-      );
-      // If we have no spaces data, we should run migration
-      // to restore them from the database. Note we also do a
-      // check if we already planned to run migration for optimization.
-      this._shouldRunMigration = true;
-      await this.#getDataFromDBForMigration();
+      // Only migrate when this profile actually has the old Places tables.
+      // A clean first run has neither a session file nor those tables.
+      if (await this.#legacyPlacesWorkspaceTablesExist()) {
+        this.log(
+          "No spaces data found in session file, running migration",
+          this.#sidebarWithoutCloning
+        );
+        this._shouldRunMigration = true;
+        await this.#getDataFromDBForMigration();
+      } else {
+        this.log(
+          "Fresh profile: no session spaces and no Places workspace tables"
+        );
+        this._shouldRunMigration = false;
+        this._migrationData = { spaces: [], pins: [] };
+      }
     }
     if (
       Services.prefs.getBoolPref("zen.session-store.log-tab-entries", false)
