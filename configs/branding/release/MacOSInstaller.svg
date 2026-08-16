@@ -1,1 +1,19 @@
-<svg width="320" height="130" xmlns="http://www.w3.org/2000/svg"><rect width="300" height="100" x="10" y="10" style="fill:rgb(0,0,255);stroke-width:3;stroke:red" />Sorry, your browser does not support inline SVG.</svg> 
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Zen Sber dock/app mark: green sail on a dark squircle. Not the official Sber knot. -->
+  <rect width="1024" height="1024" rx="230" fill="#121212"/>
+  <path fill="#21A038" d="M268 788
+    C230 680 224 548 292 412
+    C348 320 500 236 656 232
+    C718 230 762 248 780 300
+    C804 360 808 530 796 714
+    C792 760 780 788 744 788
+    Z"/>
+  <path fill="#FFFFFF" d="M348 668
+    C318 568 328 456 384 368
+    C436 300 548 258 632 256
+    C646 255 654 270 642 278
+    C568 284 472 318 428 376
+    C380 452 372 556 400 662
+    C404 676 360 682 348 668
+    Z"/>
+</svg>

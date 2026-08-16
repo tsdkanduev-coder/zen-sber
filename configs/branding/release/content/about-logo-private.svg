@@ -1,13 +1,18 @@
 <svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Same Zen Sber sail mark for private-window About. -->
-  <rect width="1024" height="1024" rx="230" fill="#1A1A1A"/>
-  <path d="M352 236
-           C348 392 346 548 352 720
-           L724 720
-           C676 548 548 348 352 236
-           Z" fill="#21A038"/>
-  <path d="M392 268
-           C548 360 656 520 704 688
-           C668 528 548 360 412 286
-           Z" fill="#FFFFFF"/>
+  <!-- Zen Sber mark on transparent. Green sail + white highlight. Not the official Sber knot. -->
+  <path fill="#21A038" d="M268 788
+    C230 680 224 548 292 412
+    C348 320 500 236 656 232
+    C718 230 762 248 780 300
+    C804 360 808 530 796 714
+    C792 760 780 788 744 788
+    Z"/>
+  <path fill="#FFFFFF" d="M348 668
+    C318 568 328 456 384 368
+    C436 300 548 258 632 256
+    C646 255 654 270 642 278
+    C568 284 472 318 428 376
+    C380 452 372 556 400 662
+    C404 676 360 682 348 668
+    Z"/>
 </svg>
