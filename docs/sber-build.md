@@ -394,32 +394,30 @@ window visible, no `no such table`, no minidump.
 
 ### First-run BackupService / session save
 
-About 15s after the first window, Firefox idle runs `BackupService.takeMeasurements`
-and SessionSaver writes `zen-sessions.jsonlz4`. Two first-run holes could kill
-the process:
+**Commit:** `ba99cd7f0` — Disable BackupService init on first-run to stop minidump
 
-- `BackupService.DEFAULT_PARENT_DIR_PATH` is `""` when Documents/OneDrive is
-  missing. `PathUtils.join("")` throws `NotAllowedError`. If that is skipped,
-  `SessionStoreBackupResource.measure()` used to call `getCurrentState(true)`
-  and force-recollect every window while the empty tab / spaces are still
-  settling.
-- `ZenSessionManager.saveState` copied a missing `zen-sessions.jsonlz4`,
-  collected `undefined` spaces/tabs, and had no try/catch around the write.
+After empty-tab reuse (`Reusing startup about:blank`), Firefox idle runs
+`BackupService.init()`. On a fresh profile that registers Places listeners and
+later force-collects live session state (`getCurrentState(true)` /
+`PathUtils.join("")` when Documents is missing). Experience minidump
+`5ee8b4af-17f5-4859-30d4-d44ff45a4558`.
 
-Fix (no new OS compile; JS only, then `./mach package`):
+**Cause:** BackupService / profile-backup init on a clean first-run profile.
 
-- `src/zen/sessionstore/ZenSessionManager.sys.mjs`: wrap `saveState`; skip copy
-  and dated backup when the session file is missing; default missing
-  spaces/tabs/folders to `[]`.
-- `src/browser/components/backup/BackupService.sys.mjs` (patch): do not
-  `PathUtils.join` an empty parent dir; swallow measurement failures.
-- `SessionStoreBackupResource.sys.mjs` (patch): skip live `getCurrentState`
-  until `sessionstore.jsonlz4` exists.
-- `SessionSaver.sys.mjs` (patch): Zen save errors must not abort Firefox
-  session write.
+**Fix** (no new OS compile; JS/pref only, then `./mach package`):
 
-Reproduced: extract tarball, new `--profile`, `./zen`. Window stayed open well
-past `Saving Zen session data with 0 tabs`. Docs-dir warning is logged; no
-`PathUtils.join` `NotAllowedError`. No minidump. `zen-sessions.jsonlz4` written.
+- `browser.backup.enabled` default `false` (`prefs/firefox/browser.yaml`,
+  `zen.js`) so BrowserGlue skips `BackupService.init()`.
+- `src/zen/sessionstore/ZenSessionManager.sys.mjs` sets that default at
+  session-manager init (before idle tasks).
+- `BrowserGlue.sys.mjs` wraps `BackupService.init()` in try/catch if the pref
+  is ever re-enabled.
+
+The product tarball still contains `zen/omni.ja` and `zen/browser/omni.ja`.
+
+Reproduced: extract tarball, new `--profile`, `./zen`. Log:
+`Disabled browser.backup.enabled for first-run safety`, then
+`Reusing startup about:blank`, then `Saving Zen session data with 0 tabs`.
+No `BackupService:` lines. Window stayed open 60s+. No minidump.
 
 macOS dmg / Windows exe: not built. Those need a separate OS compile; this 15 GiB VM only has the Linux tree.

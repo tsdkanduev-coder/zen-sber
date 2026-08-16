@@ -28,3 +28,19 @@ index d07aaa3fbb8ccb02ae00d845649dc9c1d623cba5..68d3a4800f14fef5b5e7df9cd9afe3bc
    },
  
    async _showUpgradeDialog() {
+@@ -1310,10 +1317,14 @@
+         name: "BackupService initialization",
+         condition: Services.prefs.getBoolPref("browser.backup.enabled", false),
+         task: () => {
+-          lazy.BackupService.init();
++          try {
++            lazy.BackupService.init();
++          } catch (e) {
++            console.error("BackupService initialization failed", e);
++          }
+         },
+       },
+ 
+       {
+         name: "Init hasSSD for SystemInfo",
+

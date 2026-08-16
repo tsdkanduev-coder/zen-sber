@@ -102,3 +102,7 @@
 
 - name: browser.preonboarding.enabled
   value: false
+
+# Fresh-profile BackupService.init() races Places / session collect and minidumps.
+- name: browser.backup.enabled
+  value: false

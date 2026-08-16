@@ -98,6 +98,17 @@ export class nsZenSessionManager {
 
   init() {
     this.log("Initializing session manager");
+    try {
+      // First-run BackupService.init() registers Places listeners and later
+      // force-collects session state. On a fresh profile that minidumps.
+      // Disable before BrowserGlue idle tasks so init never runs.
+      Services.prefs
+        .getDefaultBranch("")
+        .setBoolPref("browser.backup.enabled", false);
+      this.log("Disabled browser.backup.enabled for first-run safety");
+    } catch (e) {
+      this.log("Could not disable BackupService", e);
+    }
     let backupTo = null;
     if (SHOULD_BACKUP_FILE) {
       backupTo = PathUtils.join(this.#backupFolderPath, "recovery.baklz4");
