@@ -297,3 +297,26 @@ Theme unchanged. Goal is a binary on the same 15 GiB / no-swap VM.
 - Command: `npm run build -- --jobs 1`
 
 Last resort if this still OOMs: `ac_add_options --disable-optimize`.
+
+### Result — success
+
+`npm run build -- --jobs 1` **exit 0**.
+
+```
+We know it took a while, but your build finally finished successfully!
+BUILD_EXIT:0
+```
+
+**Artifact:** `/workspace/engine/obj-x86_64-pc-linux-gnu/dist/bin/zen`  
+Companion: `/workspace/engine/obj-x86_64-pc-linux-gnu/dist/bin/libxul.so` (~3.0G, unstripped because `--disable-release`).
+
+Flag set that produced the binary:
+
+- `ac_add_options --disable-lto`
+- `ac_add_options --disable-release`
+- `mk_add_options MOZ_MAKE_FLAGS="-j1"`
+- `export MOZ_LTO=0`
+- Env: `MOZ_LTO=0 CARGO_PROFILE_RELEASE_LTO=false CARGO_INCREMENTAL=0`
+- `npm run build -- --jobs 1`
+
+`--disable-optimize` was **not** needed.
