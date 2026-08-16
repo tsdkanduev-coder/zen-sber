@@ -86,9 +86,16 @@
 
 - name: app.normandy.enabled
   value: false
+  locked: true
 
 - name: app.normandy.api_url
   value: ""
+  locked: true
+
+# Nimbus RemoteSettingsExperimentLoader.enable() reads
+# nimbus-desktop-experiments (Walk10 last JS error before dump 75aae051).
+- name: nimbus.rollouts.enabled
+  value: false
   locked: true
 
 # Crash Reports

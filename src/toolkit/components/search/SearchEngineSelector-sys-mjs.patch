@@ -1,5 +1,5 @@
 diff --git a/toolkit/components/search/SearchEngineSelector.sys.mjs b/toolkit/components/search/SearchEngineSelector.sys.mjs
-index 3a42b383af..063775e80e 100644
+index 3a42b383af..1ecddccad0 100644
 --- a/toolkit/components/search/SearchEngineSelector.sys.mjs
 +++ b/toolkit/components/search/SearchEngineSelector.sys.mjs
 @@ -46,6 +46,10 @@ export class SearchEngineSelector {
@@ -13,53 +13,47 @@ index 3a42b383af..063775e80e 100644
      this.#boundOnConfigurationUpdated = this._onConfigurationUpdated.bind(this);
      this.#boundOnConfigurationOverridesUpdated =
        this._onConfigurationOverridesUpdated.bind(this);
-@@ -100,7 +104,12 @@ export class SearchEngineSelector {
+@@ -100,30 +104,18 @@ export class SearchEngineSelector {
      this.#getConfigurationPromise = null;
  
      if (!this.#configuration?.length) {
 -      throw new Error("Failed to get engine data from Remote Settings");
-+      // Page load (urlbar format / SearchService.init) must not die here.
-+      lazy.logConsole.error(
-+        "Failed to get engine data from Remote Settings; continuing with empty config"
-+      );
-+      this.#configuration = [];
-+      return this.#configuration;
-     }
- 
-     /**
-@@ -105,24 +114,20 @@ export class SearchEngineSelector {
-      * Records whether the listeners have been added or not.
-      */
+-    }
+-
+-    /**
+-     * Records whether the listeners have been added or not.
+-     */
 -    if (!this.#listenerAdded) {
 -      this.#remoteConfig.on("sync", this.#boundOnConfigurationUpdated);
 -      this.#remoteConfigOverrides.on(
 -        "sync",
 -        this.#boundOnConfigurationOverridesUpdated
--      );
++      // Page load (urlbar format / SearchService.init) must not die here.
++      lazy.logConsole.error(
++        "Failed to get engine data from Remote Settings; continuing with empty config"
+       );
 -      /**
 -       * Records whether the listeners have been added or not.
 -       */
 -      this.#listenerAdded = true;
--    }
--
++      this.#configuration = [];
++      return this.#configuration;
+     }
+ 
 -    this.#selector.setSearchConfig(
 -      JSON.stringify({ data: this.#configuration })
 -    );
 -    this.#selector.setConfigOverrides(
 -      JSON.stringify({ data: remoteSettingsData[1] })
-+    // Do not listen for later search-config-v2 refreshes. A remote
-+    // update after first paint pushes new records into rust
-+    // setSearchConfig / filterEngineConfiguration, which can still
-+    // unwrap/expect in this libxul (explicit panic ~38s).
+-    );
++    // Do not listen for later search-config-v2 refreshes and never
++    // construct the rust SearchEngineSelector. This libxul still
++    // locales_record.unwrap() / expect()s (explicit panic ~170s idle).
 +    this.#listenerAdded = true;
-+
-+    this.#applySelectorConfig(
-+      this.#configuration,
-+      remoteSettingsData[1] || []
-     );
  
      return this.#configuration;
-@@ -216,20 +223,48 @@ export class SearchEngineSelector {
+   }
+@@ -216,20 +208,23 @@ export class SearchEngineSelector {
        `fetchEngineConfiguration ${locale}:${region}:${channel}:${distroID}:${experiment}:${appName}:${version}`
      );
  
@@ -82,46 +76,21 @@ index 3a42b383af..063775e80e 100644
 +        appPrivateDefaultEngineId: null,
 +      };
 +    }
-+
-+    // Re-filtering after a later search-config-v2 refresh can hit
-+    // locales_record.unwrap() in this libxul (explicit panic). Keep the
-+    // first successful rust result and do not call rust again.
+ 
+-    refinedSearchConfig.engines = refinedSearchConfig.engines.filter(
++    // Never call rust setSearchConfig / filterEngineConfiguration.
++    // JS try/catch cannot catch locales_record.unwrap() (panic=abort).
 +    if (this.#lastRefinedConfig) {
 +      return this.#lastRefinedConfig;
 +    }
- 
--    refinedSearchConfig.engines = refinedSearchConfig.engines.filter(
-+    let refinedSearchConfig;
-+    try {
-+      refinedSearchConfig = this.#selector.filterEngineConfiguration(
-+        new lazy.SearchUserEnvironment({
-+          locale,
-+          region,
-+          updateChannel: this.#convertUpdateChannel(channel),
-+          distributionId: distroID ?? "",
-+          experiment: experiment ?? "",
-+          appName: this.#convertApplicationName(appName),
-+          version,
-+          deviceType: lazy.SearchDeviceType.NONE,
-+        })
-+      );
-+    } catch (ex) {
-+      lazy.logConsole.error(
-+        "Rust filterEngineConfiguration failed; continuing without engines",
-+        ex
-+      );
-+      return {
-+        engines: [],
-+        appDefaultEngineId: null,
-+        appPrivateDefaultEngineId: null,
-+      };
-+    }
++
++    let refinedSearchConfig = this.#jsRefineConfig();
 +
 +    refinedSearchConfig.engines = (refinedSearchConfig.engines || []).filter(
        e => !e.optional
      );
  
-@@ -246,7 +281,7 @@ export class SearchEngineSelector {
+@@ -246,7 +241,7 @@ export class SearchEngineSelector {
          refinedSearchConfig.appDefaultEngineId =
            refinedSearchConfig.engines[0].identifier;
        } else {
@@ -130,7 +99,7 @@ index 3a42b383af..063775e80e 100644
            "Could not find any engines in the filtered configuration"
          );
        }
-@@ -258,6 +293,7 @@ export class SearchEngineSelector {
+@@ -258,6 +253,7 @@ export class SearchEngineSelector {
        );
      }
  
@@ -138,7 +107,7 @@ index 3a42b383af..063775e80e 100644
      return refinedSearchConfig;
    }
  
-@@ -265,6 +301,7 @@ export class SearchEngineSelector {
+@@ -265,6 +261,7 @@ export class SearchEngineSelector {
     * The remote settings client for handling the search configuration collection.
     */
    #remoteConfig;
@@ -146,7 +115,7 @@ index 3a42b383af..063775e80e 100644
  
    /**
     * The remote settings client for handling the search configuration overrides
-@@ -366,11 +403,8 @@ export class SearchEngineSelector {
+@@ -366,11 +363,7 @@ export class SearchEngineSelector {
     *   The new configuration object
     */
    _onConfigurationUpdated({ data: { current } }) {
@@ -156,51 +125,91 @@ index 3a42b383af..063775e80e 100644
 -      JSON.stringify({ data: this.#configuration })
 -    );
 +    this.#configuration = current || [];
-+    this.#applySelectorConfig(this.#configuration, null);
  
      lazy.logConsole.debug("Search configuration updated remotely");
      if (this.#changeListener) {
-@@ -393,7 +427,7 @@ export class SearchEngineSelector {
+@@ -393,8 +386,6 @@ export class SearchEngineSelector {
     *   The new configuration object
     */
    _onConfigurationOverridesUpdated({ data: { current } }) {
 -    this.#selector.setConfigOverrides(JSON.stringify({ data: current }));
-+    this.#applySelectorConfig(null, current || []);
- 
+-
      lazy.logConsole.debug("Search configuration overrides updated remotely");
      if (this.#changeListener) {
-@@ -435,6 +469,31 @@ export class SearchEngineSelector {
-     return this.#cachedSelector;
+       this.#changeListener();
+@@ -419,20 +410,64 @@ export class SearchEngineSelector {
    }
  
-+  /**
-+   * Push config into the Rust selector. A panic/error here used to kill
-+   * the first navigation (urlbar → SearchService.init).
-+   *
-+   * @param {object[]|null} configuration
-+   * @param {object[]|null} overrides
-+   */
-+  #applySelectorConfig(configuration, overrides) {
-+    if (this.#lastRefinedConfig) {
-+      return;
-+    }
-+    try {
-+      if (configuration) {
-+        this.#selector.setSearchConfig(
-+          JSON.stringify({ data: configuration })
-+        );
-+      }
-+      if (overrides) {
-+        this.#selector.setConfigOverrides(JSON.stringify({ data: overrides }));
-+      }
-+    } catch (ex) {
-+      lazy.logConsole.error(
-+        "Rust search selector rejected config; page load continues",
-+        ex
-+      );
-+    }
-+  }
-+
    /**
-    * Converts the update channel from a string into a type the search engine
-    * selector can understand.
+-   * @type {InstanceType<typeof lazy.SearchEngineSelector>?}
+-   */
+-  #cachedSelector = null;
+-
+-  /**
+-   * Returns the Rust based selector.
++   * Refine dump records in JS. Do not construct rust SearchEngineSelector.
+    *
+-   * @returns {InstanceType<typeof lazy.SearchEngineSelector>}
++   * @returns {{engines: object[], appDefaultEngineId: ?string, appPrivateDefaultEngineId: ?string}}
+    */
+-  get #selector() {
+-    if (!this.#cachedSelector) {
+-      this.#cachedSelector = lazy.SearchEngineSelector.init();
++  #jsRefineConfig() {
++    const engines = [];
++    let appDefaultEngineId = null;
++    let appPrivateDefaultEngineId = null;
++    for (const rec of this.#configuration || []) {
++      if (rec.recordType === "defaultEngines") {
++        appDefaultEngineId = rec.globalDefault || appDefaultEngineId;
++        appPrivateDefaultEngineId =
++          rec.globalDefaultPrivate || appPrivateDefaultEngineId;
++        continue;
++      }
++      if (rec.recordType !== "engine" || !rec.identifier || !rec.base?.name) {
++        continue;
++      }
++      const urls = rec.base.urls;
++      if (!urls?.search?.base) {
++        continue;
++      }
++      const variant = rec.variants?.[0] || {};
++      if (variant.optional) {
++        continue;
++      }
++      engines.push({
++        identifier: rec.identifier,
++        name: rec.base.name,
++        urls,
++        aliases: rec.base.aliases || [],
++        charset: rec.base.charset || "UTF-8",
++        classification: rec.base.classification,
++        optional: false,
++        partnerCode: variant.partnerCode || rec.base.partnerCode || "",
++        telemetrySuffix: variant.telemetrySuffix || rec.base.telemetrySuffix,
++        orderHint: rec.base.orderHint,
++        clickUrl: rec.base.clickUrl,
++        isNewUntil: rec.base.isNewUntil,
++      });
+     }
+-    return this.#cachedSelector;
++    if (
++      !appDefaultEngineId ||
++      !engines.some(e => e.identifier === appDefaultEngineId)
++    ) {
++      const prefer = ["google", "ddg", "bing"];
++      appDefaultEngineId =
++        prefer
++          .map(id => engines.find(e => e.identifier === id))
++          .find(Boolean)?.identifier ||
++        engines[0]?.identifier ||
++        null;
++    }
++    lazy.logConsole.debug(
++      "JS refine (no rust SearchEngineSelector): " +
++        engines.map(e => e.identifier)
++    );
++    return { engines, appDefaultEngineId, appPrivateDefaultEngineId };
+   }
+ 
+   /**

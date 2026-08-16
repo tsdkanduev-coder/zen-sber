@@ -618,6 +618,38 @@ of the SWGL CPU backend.
 Reproduced: packaged `./zen`, new profile, `about:newtab` selected.
 Stayed up **6m44s**. No minidump. No release upload.
 
+### Idle rust SearchEngineSelector / Nimbus (Walk10)
+
+Walk10 last JS error before dump `75aae051` was
+
+`services.settings: EmptyDatabaseError: "main/nimbus-desktop-experiments" has not been synced yet`
+
+then ~170s, `MozCrashReason=explicit panic`, URL=`about:newtab`.
+
+RS guards were already in the 34654a4 omni.ja (`shouldSkipRemoteActivity`
+hard-true, no rust RS construct, `verifySignature` false). Those are
+not the remaining abort.
+
+The remaining rust path is `SearchEngineSelector` still calling
+`setSearchConfig` / `filterEngineConfiguration`. JS try/catch cannot
+catch `locales_record.unwrap()` (`panic=abort`). First rust call can
+wait until idle search init / reconfig, which matches ~170s.
+Nimbus still `enable()`s because FirefoxLabs keeps
+`ExperimentAPI.enabled` true. newtab Discovery Stream was still on.
+
+**Fix** (JS/prefs only, no libxul rebuild):
+
+- Never construct rust `SearchEngineSelector`; refine the dump in JS.
+- `ExperimentAPI.enabled` always false so the experiment loader does
+  not read `nimbus-desktop-experiments`.
+- Prefs: `nimbus.rollouts.enabled` false locked, Normandy locked off,
+  `discoverystream.enabled` / `feeds.discoverystreamfeed` false.
+
+Reproduced: packaged `./zen`, new profile, `about:newtab` selected.
+No `nimbus-desktop-experiments` EmptyDatabaseError. Search engines
+loaded from the dump in JS (no rust selector). Stayed up **6m12s**.
+No minidump. No release upload.
+
 Commit first; re-package only when asked. Branding / chrome
 tokens unchanged.
 
