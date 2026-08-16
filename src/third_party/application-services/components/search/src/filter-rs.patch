@@ -1,0 +1,15 @@
+diff --git a/third_party/application-services/components/search/src/filter.rs b/third_party/application-services/components/search/src/filter.rs
+index aa55ce4c84..e86afb905b 100644
+--- a/third_party/application-services/components/search/src/filter.rs
++++ b/third_party/application-services/components/search/src/filter.rs
+@@ -222,7 +222,9 @@ impl Filter for Vec<RemoteSettingsRecord> {
+                     let stringified = serde_json::to_string(&record.fields)?;
+                     let locales_record: Option<JSONAvailableLocalesRecord> =
+                         serde_json::from_str(&stringified)?;
+-                    available_locales = locales_record.unwrap().locales;
++                    if let Some(locales_record) = locales_record {
++                        available_locales = locales_record.locales;
++                    }
+                 }
+             }
+         }

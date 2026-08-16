@@ -459,6 +459,35 @@ omits the crashreporter helper.
 empty/failed search-config; wrap crashreporter init so a missing helper
 cannot take down first-run; default `browser.crashReports.onDemand` false.
 
+### First content navigation (00b93c34, MozCrashReason=explicit panic)
+
+Experience: window stayed on first paint (S2 chrome), then died on the
+**first navigation to https://example.com**. `StartupCrash=0`. No
+crashreporter in the package, so the window vanished. Minidump
+`4515c1ab`. Immediately before the dump: `search-config-v2` signature
+fail.
+
+**Panic (gkrust):** `third_party/application-services/components/remote_settings/src/client.rs`
+`RemoteSettingsClient::sync`. After a failed signature retry it called
+`reset_storage().expect("Failed to reset storage after verification failure")`.
+That string is in this `libxul.so`. `panic=abort` → `MozCrashReason=explicit panic`.
+JS `try/catch` cannot catch it.
+
+A second rust unwrap on the same first-nav path:
+`search/src/filter.rs` `locales_record.unwrap()` when filtering
+`search-config-v2` records from the rust Remote Settings client.
+
+**Fix:** return the signature error instead of `.expect()`; skip a missing
+`availableLocales` record instead of unwrapping; default
+`browser.urlbar.quicksuggest.rustEnabled` false so first urlbar use does
+not construct `SharedRemoteSettingsService` / rust RS sync.
+
+Reproduced: packaged `./zen`, new `--profile`, wait for the Nightly
+window, then open `https://example.com`. With the 4c885d7b4 JS guards
+already in the tarball, SearchService completed `#init` (Google / Bing /
+DuckDuckGo from dump) and the window stayed open **54 seconds**. No
+minidump. Watched.
+
 The product tarball still contains `zen/omni.ja` and `zen/browser/omni.ja`.
 
 macOS dmg / Windows exe: not built. Those need a separate OS compile; this 15 GiB VM only has the Linux tree.
