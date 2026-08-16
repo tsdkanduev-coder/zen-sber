@@ -392,4 +392,34 @@ Fix (no new OS compile; JS only, then `./mach package`):
 Reproduced: extract tarball, new `--profile`, `./zen` stayed up 45s+, Nightly
 window visible, no `no such table`, no minidump.
 
+### First-run BackupService / session save
+
+About 15s after the first window, Firefox idle runs `BackupService.takeMeasurements`
+and SessionSaver writes `zen-sessions.jsonlz4`. Two first-run holes could kill
+the process:
+
+- `BackupService.DEFAULT_PARENT_DIR_PATH` is `""` when Documents/OneDrive is
+  missing. `PathUtils.join("")` throws `NotAllowedError`. If that is skipped,
+  `SessionStoreBackupResource.measure()` used to call `getCurrentState(true)`
+  and force-recollect every window while the empty tab / spaces are still
+  settling.
+- `ZenSessionManager.saveState` copied a missing `zen-sessions.jsonlz4`,
+  collected `undefined` spaces/tabs, and had no try/catch around the write.
+
+Fix (no new OS compile; JS only, then `./mach package`):
+
+- `src/zen/sessionstore/ZenSessionManager.sys.mjs`: wrap `saveState`; skip copy
+  and dated backup when the session file is missing; default missing
+  spaces/tabs/folders to `[]`.
+- `src/browser/components/backup/BackupService.sys.mjs` (patch): do not
+  `PathUtils.join` an empty parent dir; swallow measurement failures.
+- `SessionStoreBackupResource.sys.mjs` (patch): skip live `getCurrentState`
+  until `sessionstore.jsonlz4` exists.
+- `SessionSaver.sys.mjs` (patch): Zen save errors must not abort Firefox
+  session write.
+
+Reproduced: extract tarball, new `--profile`, `./zen`. Window stayed open well
+past `Saving Zen session data with 0 tabs`. Docs-dir warning is logged; no
+`PathUtils.join` `NotAllowedError`. No minidump. `zen-sessions.jsonlz4` written.
+
 macOS dmg / Windows exe: not built. Those need a separate OS compile; this 15 GiB VM only has the Linux tree.

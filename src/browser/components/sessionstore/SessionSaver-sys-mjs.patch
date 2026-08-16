@@ -19,11 +19,15 @@ index 9141793550f7c7ff6aa63d4c85bf571b4499e2d0..6906fd9be7ae6ca4316133e0d6552b79
        // Don't save (or even collect) anything in permanent private
        // browsing mode
  
-@@ -305,6 +306,7 @@ var SessionSaverInternal = {
+@@ -305,6 +306,12 @@ var SessionSaverInternal = {
      this._maybeClearCookiesAndStorage(state);
  
      Glean.sessionRestore.collectData.stopAndAccumulate(timerId);
-+    lazy.ZenSessionStore.saveState(state);
++    try {
++      lazy.ZenSessionStore.saveState(state);
++    } catch (e) {
++      lazy.sessionStoreLogger.error("ZenSessionStore.saveState failed", e);
++    }
      return this._writeState(state);
    },
  

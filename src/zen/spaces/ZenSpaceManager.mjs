@@ -763,17 +763,31 @@ class nsZenWorkspaces {
   }
 
   getWorkspacesForSessionStore() {
-    const spaces = this.getWorkspaces();
-    let spacesForSS = [];
-    for (const space of spaces) {
-      let newSpace = { ...space };
-      const element = this.workspaceElement(space.uuid);
-      if (element) {
-        newSpace.hasCollapsedPinnedTabs = element.hasCollapsedPinnedTabs;
+    try {
+      const spaces = this.getWorkspaces() || [];
+      let spacesForSS = [];
+      for (const space of spaces) {
+        if (!space) {
+          continue;
+        }
+        let newSpace = { ...space };
+        try {
+          const element = space.uuid
+            ? this.workspaceElement(space.uuid)
+            : null;
+          if (element) {
+            newSpace.hasCollapsedPinnedTabs = element.hasCollapsedPinnedTabs;
+          }
+        } catch {
+          /* missing workspace chrome must not abort session save */
+        }
+        spacesForSS.push(newSpace);
       }
-      spacesForSS.push(newSpace);
+      return spacesForSS;
+    } catch (e) {
+      console.error("gZenWorkspaces: getWorkspacesForSessionStore failed", e);
+      return [];
     }
-    return spacesForSS;
   }
 
   async #initializeWorkspaceBookmarks() {

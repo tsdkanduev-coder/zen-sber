@@ -645,33 +645,78 @@ export class nsZenSessionManager {
    *        the app. If false, the file will be saved immediately.
    */
   saveState(state, soon = false) {
-    let windows = state?.windows || [];
-    windows = windows.filter(win => this.#isWindowSaveable(win));
-    if (!windows.length) {
-      // Don't save (or even collect) anything in permanent private
-      // browsing mode. We also don't want to save if there are no windows.
-      return;
+    try {
+      if (!this.#file) {
+        this.log("Session file not initialized, skipping save");
+        return;
+      }
+      let windows = state?.windows || [];
+      windows = windows.filter(win => win && this.#isWindowSaveable(win));
+      if (!windows.length) {
+        // Don't save (or even collect) anything in permanent private
+        // browsing mode. We also don't want to save if there are no windows.
+        return;
+      }
+      this.#copyCleanBackupIfPossible();
+      this.#collectWindowData(windows);
+      try {
+        lazy.ZenSyncStore.notifyAboutChanges();
+      } catch (e) {
+        this.log("notifyAboutChanges failed", e);
+      }
+      // This would save the data to disk asynchronously or when quitting the app.
+      let sidebar = this.#sidebarWithoutCloning;
+      if (!sidebar || typeof sidebar !== "object") {
+        this.log("No sidebar data to save");
+        return;
+      }
+      if (!Array.isArray(sidebar.spaces)) {
+        sidebar.spaces = [];
+      }
+      if (!Array.isArray(sidebar.tabs)) {
+        sidebar.tabs = [];
+      }
+      this.#file.data = sidebar;
+      const writePromise = soon ? this.#file.saveSoon() : this.#file._save();
+      writePromise?.catch?.(e => {
+        console.error("ZenSessionManager: Failed to write session file", e);
+      });
+      try {
+        lazy.ZenLiveFoldersManager.saveState(soon);
+      } catch (e) {
+        this.log("LiveFolders saveState failed", e);
+      }
+      try {
+        this.#debounceRegeneration();
+      } catch (e) {
+        this.log("Failed to arm session backup", e);
+      }
+      this.log(
+        `Saving Zen session data with ${sidebar.tabs?.length || 0} tabs`
+      );
+    } catch (e) {
+      console.error("ZenSessionManager: Failed to save session state", e);
     }
+  }
+
+  /**
+   * Copies the current session file to clean.jsonlz4 when it exists.
+   * A missing first-run file must not reject or abort the save.
+   */
+  #copyCleanBackupIfPossible() {
+    const storePath = this.#storeFilePath;
     const cleanPath = PathUtils.join(this.#backupFolderPath, "clean.jsonlz4");
-    IOUtils.copy(this.#storeFilePath, cleanPath, { recursive: true }).catch(
-      () => {
+    IOUtils.exists(storePath)
+      .then(exists => {
+        if (!exists) {
+          return undefined;
+        }
+        return IOUtils.copy(storePath, cleanPath, { recursive: true });
+      })
+      .catch(() => {
         /* ignore errors creating clean backup, as it is not critical and
          * we want to save the session even if we fail to create it */
-      }
-    );
-    this.#collectWindowData(windows);
-    lazy.ZenSyncStore.notifyAboutChanges();
-    // This would save the data to disk asynchronously or when quitting the app.
-    let sidebar = this.#sidebarWithoutCloning;
-    this.#file.data = sidebar;
-    if (soon) {
-      this.#file.saveSoon();
-    } else {
-      this.#file._save();
-    }
-    lazy.ZenLiveFoldersManager.saveState(soon);
-    this.#debounceRegeneration();
-    this.log(`Saving Zen session data with ${sidebar.tabs?.length || 0} tabs`);
+      });
   }
 
   /**
@@ -689,7 +734,7 @@ export class nsZenSessionManager {
    * events that might cause such a regeneration to occur.
    */
   #debounceRegeneration() {
-    this.#deferredBackupTask.arm();
+    this.#deferredBackupTask?.arm();
   }
 
   /**
@@ -727,6 +772,10 @@ export class nsZenSessionManager {
       const todayFileName = `zen-sessions-${dateToUse}.jsonlz4`;
       const todayFilePath = PathUtils.join(backupFolder, todayFileName);
       const sessionFilePath = this.#file.path;
+      if (!(await IOUtils.exists(sessionFilePath))) {
+        this.log("No session file yet, skipping dated backup");
+        return;
+      }
       this.log(`Backing up session file to ${todayFileName}`);
       await IOUtils.copy(sessionFilePath, todayFilePath, {
         noOverwrite: false,
@@ -784,7 +833,7 @@ export class nsZenSessionManager {
     let sidebarData = {};
 
     sidebarData.lastCollected = Date.now();
-    this.#collectTabsData(sidebarData, aStateWindows);
+    this.#collectTabsData(sidebarData, aStateWindows || []);
     this.#sidebar = sidebarData;
   }
 
@@ -795,17 +844,23 @@ export class nsZenSessionManager {
    * @returns {boolean} True if the tab should be collected, false otherwise.
    */
   #shouldCollectTab(tabData) {
-    return tabData && !(tabData.zenIsEmpty && !tabData.groupId);
+    if (!tabData || typeof tabData !== "object") {
+      return false;
+    }
+    return !(tabData.zenIsEmpty && !tabData.groupId);
   }
 
   #collectUsedTabsFromWindows(aStateWindows) {
     const tabIdRelationMap = new Map();
-    for (const window of aStateWindows) {
+    for (const window of aStateWindows || []) {
+      if (!window || !Array.isArray(window.tabs)) {
+        continue;
+      }
       // Only accept the tabs with `_zenIsActiveTab` set to true from
       // every window. We do this to avoid collecting tabs with invalid
       // state when multiple windows are open. Note that if we a tab without
       // this flag set in any other window, we just add it anyway.
-      for (const tabData of window.tabs || []) {
+      for (const tabData of window.tabs) {
         if (!this.#shouldCollectTab(tabData)) {
           continue;
         }
@@ -827,13 +882,14 @@ export class nsZenSessionManager {
    * @param {object} aStateWindows The array of window state objects.
    */
   #collectTabsData(sidebarData, aStateWindows) {
+    const previous = this.#sidebarWithoutCloning || {};
     sidebarData.tabs = this.#collectUsedTabsFromWindows(aStateWindows);
-
-    let firstWindow = aStateWindows[0];
-    sidebarData.folders = firstWindow.folders;
-    sidebarData.splitViewData = firstWindow.splitViewData;
-    sidebarData.groups = firstWindow.groups;
-    sidebarData.spaces = firstWindow.spaces;
+    const firstWindow = aStateWindows?.[0] || {};
+    sidebarData.folders = firstWindow.folders ?? previous.folders ?? [];
+    sidebarData.splitViewData =
+      firstWindow.splitViewData ?? previous.splitViewData ?? [];
+    sidebarData.groups = firstWindow.groups ?? previous.groups ?? [];
+    sidebarData.spaces = firstWindow.spaces ?? previous.spaces ?? [];
   }
 
   /**

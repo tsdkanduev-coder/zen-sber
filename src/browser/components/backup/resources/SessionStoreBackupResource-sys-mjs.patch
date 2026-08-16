@@ -1,0 +1,64 @@
+diff --git a/browser/components/backup/resources/SessionStoreBackupResource.sys.mjs b/browser/components/backup/resources/SessionStoreBackupResource.sys.mjs
+index 53dc617cd1..f2cc1be495 100644
+--- a/browser/components/backup/resources/SessionStoreBackupResource.sys.mjs
++++ b/browser/components/backup/resources/SessionStoreBackupResource.sys.mjs
+@@ -140,25 +140,39 @@ export class SessionStoreBackupResource extends BackupResource {
+   }
+ 
+   async measure(profilePath = PathUtils.profileDir) {
+-    // Get the current state of the session store JSON and
+-    // measure it's uncompressed size.
+-    let sessionStoreJson = this.#sessionStore.getCurrentState(true);
+-    let sessionStoreSize = new TextEncoder().encode(
+-      JSON.stringify(sessionStoreJson)
+-    ).byteLength;
+-    let sessionStoreNearestTenKb = bytesToFuzzyKilobytes(sessionStoreSize);
+-
+-    Glean.browserBackup.sessionStoreSize.set(sessionStoreNearestTenKb);
+-
+-    let sessionStoreBackupsDirectoryPath = PathUtils.join(
+-      profilePath,
+-      "sessionstore-backups"
+-    );
+-    let sessionStoreBackupsDirectorySize =
+-      await BackupResource.getDirectorySize(sessionStoreBackupsDirectoryPath);
+-
+-    Glean.browserBackup.sessionStoreBackupsDirectorySize.set(
+-      sessionStoreBackupsDirectorySize
+-    );
++    // First-run profiles have no session file yet. Force-collecting live
++    // window state here races session save and can kill the process when a
++    // tab, space, or table is still missing.
++    try {
++      const sessionFile = PathUtils.join(profilePath, "sessionstore.jsonlz4");
++      if (await IOUtils.exists(sessionFile)) {
++        let sessionStoreJson = this.#sessionStore.getCurrentState(false);
++        let sessionStoreSize = new TextEncoder().encode(
++          JSON.stringify(sessionStoreJson)
++        ).byteLength;
++        Glean.browserBackup.sessionStoreSize.set(
++          bytesToFuzzyKilobytes(sessionStoreSize)
++        );
++      }
++    } catch (e) {
++      lazy.logConsole.error("Failed to measure session store state", e);
++    }
++
++    try {
++      let sessionStoreBackupsDirectoryPath = PathUtils.join(
++        profilePath,
++        "sessionstore-backups"
++      );
++      if (!(await IOUtils.exists(sessionStoreBackupsDirectoryPath))) {
++        return;
++      }
++      let sessionStoreBackupsDirectorySize =
++        await BackupResource.getDirectorySize(sessionStoreBackupsDirectoryPath);
++      Glean.browserBackup.sessionStoreBackupsDirectorySize.set(
++        sessionStoreBackupsDirectorySize
++      );
++    } catch (e) {
++      lazy.logConsole.error("Failed to measure sessionstore-backups", e);
++    }
+   }
+ }
