@@ -579,6 +579,45 @@ The ee3e116 rust `client.rs` / `filter.rs` patches are **reverted**.
 This `libxul` still `.expect()`s; idle `about:newtab` must not call
 that path. JS only.
 
+### Idle about:newtab SWGL panic (34654a4 / 75aae051)
+
+Experience walked `34654a4` (tarball SHA `847944f3`). JS RS guards
+held: idle 120s passed, `example.com` was never opened, then the
+window still died.
+
+| Field | Value |
+| --- | --- |
+| `URL` | `about:newtab` |
+| `UptimeTS` | `170s` (local repro `228.7s`) |
+| `MozCrashReason` | `explicit panic` |
+| Dump | `75aae051-231e-7048-8084-cb101e866206` (local `0e5eaeb6`) |
+
+`minidump-stackwalk` on the local dump: **Thread 29 Renderer**,
+`SIGSEGV / SEGV_MAPERR` at `0x0` (`mov qword [rcx], rax`),
+`libxul.so + 0xbdd1380`. Main thread was idle in the glib loop.
+Telemetry: compositor `webrender_software`, WebRender
+`blocklisted:FEATURE_FAILURE_SOFTWARE_GL`, adapter
+`mesa/llvmpipe`. This is **not** rust `RemoteSettingsClient::sync`
+and **not** `search/src/filter.rs` `locales_record.unwrap()`.
+
+Software WebRender (SWGL) rust-panics on the Renderer thread
+(`panic=abort` → `MozCrashReason=explicit panic`). SWGL source
+includes `panic!("unknown shader")` in
+`engine/gfx/wr/swgl/src/swgl_fns.rs`. JS RS guards cannot catch it.
+
+**Fix** (prefs only, no new OS compile, theme/icons untouched):
+
+- `gfx.webrender.all` true
+- `gfx.webrender.reject-software-driver` false (GTK)
+- `gfx.webrender.software` false
+- `layers.acceleration.force-enabled` true
+
+That forces hardware WR onto the GL driver (mesa/llvmpipe) instead
+of the SWGL CPU backend.
+
+Reproduced: packaged `./zen`, new profile, `about:newtab` selected.
+Stayed up **6m44s**. No minidump. No release upload.
+
 Commit first; re-package only when asked. Branding / chrome
 tokens unchanged.
 
