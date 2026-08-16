@@ -477,10 +477,12 @@ A second rust unwrap on the same first-nav path:
 `search/src/filter.rs` `locales_record.unwrap()` when filtering
 `search-config-v2` records from the rust Remote Settings client.
 
-**Fix:** return the signature error instead of `.expect()`; skip a missing
-`availableLocales` record instead of unwrapping; default
-`browser.urlbar.quicksuggest.rustEnabled` false so first urlbar use does
-not construct `SharedRemoteSettingsService` / rust RS sync.
+**Those rust source patches are reverted.** They never landed in this
+`libxul.so` (same BuildID, `.expect()` still present). Applying them
+without a gkrust rebuild did not help, and the ee3e116 tarball is
+worse than `00b93c34` on idle `about:newtab` (086fed45). JS guards
+are enough: never construct rust RS; every collection’s signature
+failure is non-fatal; do not poll after first paint.
 
 Reproduced: packaged `./zen`, new `--profile`, wait for the Nightly
 window, then open `https://example.com`. With the 4c885d7b4 JS guards
@@ -572,6 +574,10 @@ on idle `about:newtab` (Push HELLO → `pollChanges` → rust
 `RemoteSettings.init` does not hook Push, so idle `about:newtab`
 never starts that rust path. Quicksuggest rust stays off.
 Search rust is used once from the dump, then frozen.
+
+The ee3e116 rust `client.rs` / `filter.rs` patches are **reverted**.
+This `libxul` still `.expect()`s; idle `about:newtab` must not call
+that path. JS only.
 
 Commit first; re-package only when asked. Branding / chrome
 tokens unchanged.
