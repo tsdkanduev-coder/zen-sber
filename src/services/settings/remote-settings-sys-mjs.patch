@@ -1,0 +1,19 @@
+diff --git a/services/settings/remote-settings.sys.mjs b/services/settings/remote-settings.sys.mjs
+--- a/services/settings/remote-settings.sys.mjs
++++ b/services/settings/remote-settings.sys.mjs
+@@ -744,6 +744,15 @@
+    * Startup function called from nsBrowserGlue.
+    */
+   remoteSettings.init = () => {
++    // Do not hook Push. A HELLO/REGISTER broadcast starts pollChanges
++    // ~30–60s after first paint (idle about:newtab). That path still
++    // reaches rust RemoteSettingsClient::sync .expect() in this libxul.
++    if (lazy.Utils.shouldSkipRemoteActivity) {
++      lazy.console.info(
++        "Initialize Remote Settings: skip remote poll (idle about:newtab)"
++      );
++      return;
++    }
+     lazy.console.info("Initialize Remote Settings");
+     // Hook the Push broadcast and RemoteSettings polling.
+     // When we start on a new profile there will be no ETag stored.

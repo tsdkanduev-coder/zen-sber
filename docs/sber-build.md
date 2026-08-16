@@ -511,8 +511,13 @@ completed (Google / Bing / DuckDuckGo). Stayed up **70s+**. No minidump.
 
 Experience bounced the sail-icon tarball (`ee3e116` + `7ba0685`, SHA
 `59fc261b…`). Window appeared, then crashed. New minidump
-`086fed45-126e-dc6c-d4fd-e6512059c672`. They did not say if it was
-startup or `example.com`.
+`086fed45-126e-dc6c-d4fd-e6512059c672`.
+
+This is **not first-nav**. Dump URL `about:newtab`. They sat idle
+30–60s, then clicked sidebar search — the window was already gone.
+Log: JS collections `has signature disabled`, then
+`ExceptionHandler::GenerateDump`. `MozCrashReason=explicit panic`,
+`StartupCrash=0`.
 
 **Local repro of that tarball** (fresh profile, no URL): window title
 **Nightly**, SearchService `#init` completed (default engine
@@ -559,8 +564,16 @@ no new OS compile):
 
 `f8014a3ec` alone was not enough: a local run of that JS still
 minidumped at ~38s on `about:newtab` (`723bcc07`, same
-`explicit panic`). The remaining trigger is the delayed RS poll.
+`explicit panic`). The remaining trigger is the delayed RS poll
+on idle `about:newtab` (Push HELLO → `pollChanges` → rust
+`RemoteSettingsClient::sync` `.expect()`).
 
-Same tarball URL. Branding / chrome tokens unchanged.
+`Utils.shouldSkipRemoteActivity` is hard-true and
+`RemoteSettings.init` does not hook Push, so idle `about:newtab`
+never starts that rust path. Quicksuggest rust stays off.
+Search rust is used once from the dump, then frozen.
+
+Commit first; re-package only when asked. Branding / chrome
+tokens unchanged.
 
 macOS dmg / Windows exe: not built. Those need a separate OS compile; this 15 GiB VM only has the Linux tree.
