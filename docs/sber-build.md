@@ -507,4 +507,51 @@ Reproduced again: extract, new `--profile`, `./zen https://example.com`.
 Window title **Example Domain — Nightly**. SearchService `#init`
 completed (Google / Bing / DuckDuckGo). Stayed up **70s+**. No minidump.
 
+### After first paint (59fc261b, minidump 086fed45)
+
+Experience bounced the sail-icon tarball (`ee3e116` + `7ba0685`, SHA
+`59fc261b…`). Window appeared, then crashed. New minidump
+`086fed45-126e-dc6c-d4fd-e6512059c672`. They did not say if it was
+startup or `example.com`.
+
+**Local repro of that tarball** (fresh profile, no URL): window title
+**Nightly**, SearchService `#init` completed (default engine
+`google-b-d`), then `ExceptionHandler::GenerateDump`. Local dump
+`3c09cb27-7e85-0f31-e9c4-2669ab6ea716`.
+
+| Field | Value |
+| --- | --- |
+| `MozCrashReason` | `explicit panic` |
+| `URL` | `about:newtab` |
+| `StartupCrash` | `0` |
+| `UptimeTS` | `36.68s` |
+| `crash_type` (older same-panic extras) | `SIGSEGV / SEGV_MAPERR` at `0x0` |
+
+`libxul.so` is stripped (BuildID `614317ea5d5236f108e4d10a3409d360`).
+`addr2line` only yields `XRE_GetBootstrap`. Same signature as the
+older first-nav extras: rust `RemoteSettingsClient::sync`
+`reset_storage().expect("Failed to reset storage after verification failure")`
+with `panic=abort`. JS `try/catch` cannot catch it.
+
+The 59fc261b JS only skipped verify for `search-config-v2` /
+overrides / `crash-reports-ondemand`. Other collections still
+verified. `RustSharedRemoteSettingsService` still called
+`RemoteSettingsService.init` on import. `SuggestBackendRust`
+still grabbed `rustService()` even with
+`quicksuggest.rustEnabled` false. A later rust collection sync
+is the abort.
+
+**Fix** (`f8014a3ec`, no new OS compile):
+
+- Every JS `RemoteSettingsClient` sets `verifySignature = false`.
+- Do not construct the rust `RemoteSettingsService`; `rustService()`
+  returns `null`; `sync()` is a no-op.
+- `SuggestBackendRust` never attaches rust RS.
+- `ContentRelevancyManager` skips rust store init when there is no
+  rust service.
+- Cache the first successful rust `filterEngineConfiguration` so a
+  later search-config refresh cannot hit `locales_record.unwrap()`.
+
+Same tarball URL. Branding / chrome tokens unchanged.
+
 macOS dmg / Windows exe: not built. Those need a separate OS compile; this 15 GiB VM only has the Linux tree.
