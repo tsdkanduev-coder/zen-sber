@@ -27,15 +27,32 @@ index 3a42b383af..063775e80e 100644
      }
  
      /**
-@@ -118,11 +127,9 @@ export class SearchEngineSelector {
-       this.#listenerAdded = true;
-     }
- 
+@@ -105,24 +114,20 @@ export class SearchEngineSelector {
+      * Records whether the listeners have been added or not.
+      */
+-    if (!this.#listenerAdded) {
+-      this.#remoteConfig.on("sync", this.#boundOnConfigurationUpdated);
+-      this.#remoteConfigOverrides.on(
+-        "sync",
+-        this.#boundOnConfigurationOverridesUpdated
+-      );
+-      /**
+-       * Records whether the listeners have been added or not.
+-       */
+-      this.#listenerAdded = true;
+-    }
+-
 -    this.#selector.setSearchConfig(
 -      JSON.stringify({ data: this.#configuration })
 -    );
 -    this.#selector.setConfigOverrides(
 -      JSON.stringify({ data: remoteSettingsData[1] })
++    // Do not listen for later search-config-v2 refreshes. A remote
++    // update after first paint pushes new records into rust
++    // setSearchConfig / filterEngineConfiguration, which can still
++    // unwrap/expect in this libxul (explicit panic ~38s).
++    this.#listenerAdded = true;
++
 +    this.#applySelectorConfig(
 +      this.#configuration,
 +      remoteSettingsData[1] || []
@@ -164,6 +181,9 @@ index 3a42b383af..063775e80e 100644
 +   * @param {object[]|null} overrides
 +   */
 +  #applySelectorConfig(configuration, overrides) {
++    if (this.#lastRefinedConfig) {
++      return;
++    }
 +    try {
 +      if (configuration) {
 +        this.#selector.setSearchConfig(

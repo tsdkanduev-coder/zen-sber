@@ -541,7 +541,8 @@ still grabbed `rustService()` even with
 `quicksuggest.rustEnabled` false. A later rust collection sync
 is the abort.
 
-**Fix** (`f8014a3ec`, no new OS compile):
+**Fix** (`f8014a3ec` plus the follow-up skip-remote-activity guard,
+no new OS compile):
 
 - Every JS `RemoteSettingsClient` sets `verifySignature = false`.
 - Do not construct the rust `RemoteSettingsService`; `rustService()`
@@ -551,6 +552,14 @@ is the abort.
   rust service.
 - Cache the first successful rust `filterEngineConfiguration` so a
   later search-config refresh cannot hit `locales_record.unwrap()`.
+- Do not listen for later `search-config-v2` syncs (those pushed new
+  records into rust ~38s after first paint).
+- `services.settings.skip_remote_activity` true so push / idle
+  `pollChanges` never starts a rust `RemoteSettingsClient::sync`.
+
+`f8014a3ec` alone was not enough: a local run of that JS still
+minidumped at ~38s on `about:newtab` (`723bcc07`, same
+`explicit panic`). The remaining trigger is the delayed RS poll.
 
 Same tarball URL. Branding / chrome tokens unchanged.
 

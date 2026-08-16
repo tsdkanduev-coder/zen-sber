@@ -1,0 +1,22 @@
+diff --git a/services/settings/Utils.sys.mjs b/services/settings/Utils.sys.mjs
+--- a/services/settings/Utils.sys.mjs
++++ b/services/settings/Utils.sys.mjs
+@@ -119,6 +119,18 @@
+   log,
+ 
+   get shouldSkipRemoteActivity() {
++    // This libxul still .expect()s in rust RemoteSettingsClient::sync
++    // (MozCrashReason=explicit panic). A later poll / push broadcast
++    // after first paint syncs collections through that path. Skip all
++    // remote RS activity; dumps and local data stay available.
++    if (
++      Services.prefs.getBoolPref(
++        "services.settings.skip_remote_activity",
++        false
++      )
++    ) {
++      return true;
++    }
+     if (
+       (lazy.isRunningTests || Cu.isInAutomation) &&
+       this.SERVER_URL == "data:,#remote-settings-dummy/v1"
