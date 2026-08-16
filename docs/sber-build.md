@@ -320,3 +320,25 @@ Flag set that produced the binary:
 - `npm run build -- --jobs 1`
 
 `--disable-optimize` was **not** needed.
+
+## Download (Linux x86_64)
+
+No packaged tarball was in `dist/` after the compile. `mach package` hung with no output, so the stripped `dist/bin` tree was archived instead.
+
+**Release (prerelease):** https://github.com/tsdkanduev-coder/zen-sber/releases/tag/zen-sber-linux-prerelease
+
+**Asset URL:** https://github.com/tsdkanduev-coder/zen-sber/releases/download/zen-sber-linux-prerelease/zen-sber-linux-x86_64.tar.xz
+
+Unstripped `libxul.so` was 3.0 GiB (over GitHub’s 2 GiB asset limit). It was stripped with `llvm-strip --strip-debug --strip-unneeded` (same flags as this repo’s release mozconfig). Tarball is ~81 MiB.
+
+### Run on Linux
+
+```bash
+tar -xJf zen-sber-linux-x86_64.tar.xz
+cd zen
+./zen
+```
+
+Keep `zen` next to `libxul.so` and the other libraries. Needs GTK 3 and a desktop session (X11 or Wayland).
+
+macOS dmg / Windows exe: not built. Those need a separate OS compile; this 15 GiB VM only has the Linux tree.
