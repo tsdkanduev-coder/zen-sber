@@ -323,22 +323,53 @@ Flag set that produced the binary:
 
 ## Download (Linux x86_64)
 
-No packaged tarball was in `dist/` after the compile. `mach package` hung with no output, so the stripped `dist/bin` tree was archived instead.
+This is an official **packaged** product (`omni.ja` + `browser/omni.ja`), not a raw `dist/bin` dump.
 
 **Release (prerelease):** https://github.com/tsdkanduev-coder/zen-sber/releases/tag/zen-sber-linux-prerelease
 
 **Asset URL:** https://github.com/tsdkanduev-coder/zen-sber/releases/download/zen-sber-linux-prerelease/zen-sber-linux-x86_64.tar.xz
 
-Unstripped `libxul.so` was 3.0 GiB (over GitHub’s 2 GiB asset limit). It was stripped with `llvm-strip --strip-debug --strip-unneeded` (same flags as this repo’s release mozconfig). Tarball is ~81 MiB.
+### Package command (existing Linux objdir — no new compile)
+
+From the repo root, after the LTO-off / `-j1` / `--disable-release` binary exists at
+`engine/obj-x86_64-pc-linux-gnu/dist/bin/zen`:
+
+```bash
+npx surfer set brand release
+npm run package
+```
+
+`npm run package` is `surfer package`. It runs `./mach package` in `engine/`, then
+`./mach package-multi-locale`, then copies `engine/obj-x86_64-pc-linux-gnu/dist/zen-1.0.0.en-US.linux-x86_64.tar.xz` to `dist/`.
+
+If `npm run package` fails because Surfer’s default brand is `unofficial` (this
+fork’s `surfer.json` only defines `release` / `twilight`), set the brand first
+as above. If `mach` cannot parse `mozconfig` in a polluted environment, run it
+with a clean env (`MOZ_MAKE_FLAGS=-j1 MOZ_LTO=0`) — same flags as the compile.
+
+**Must be in the tarball:** `zen/omni.ja` and `zen/browser/omni.ja`. A copy of
+`dist/bin` without those files is not a product (chrome locale URLs will fail
+and the child process SIGKILLs).
 
 ### Run on Linux
 
 ```bash
 tar -xJf zen-sber-linux-x86_64.tar.xz
 cd zen
+ls omni.ja browser/omni.ja   # both must exist
 ./zen
 ```
 
-Keep `zen` next to `libxul.so` and the other libraries. Needs GTK 3 and a desktop session (X11 or Wayland).
+Keep the whole `zen/` tree together (`zen`, `zen-bin`, `libxul.so`, both
+`omni.ja` files). Needs GTK 3 and a desktop session (X11 or Wayland).
+
+### VM launch check (2026-08-16)
+
+Extracted the packaged tarball on this VM and ran `./zen --no-remote --profile … about:blank` on `DISPLAY=:1`.
+
+- Window opened (title **Nightly** — this objdir is the unofficial/developer brand; chrome is still Zen Sber).
+- Child processes started with `-greomni …/omni.ja -appomni …/browser/omni.ja`.
+- No `Missing chrome locale URLs`. No child SIGKILL.
+- Selected tab rendered with the S2 green wash.
 
 macOS dmg / Windows exe: not built. Those need a separate OS compile; this 15 GiB VM only has the Linux tree.
