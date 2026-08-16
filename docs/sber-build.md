@@ -422,7 +422,7 @@ No `BackupService:` lines. Window stayed open 60s+. No minidump.
 
 ### First-run post-show tab move (after 00b93c34)
 
-**Commit:** (this change) — Keep first-run window alive after first paint
+**Commit:** `38eff73bc` — Keep first-run window alive after first paint
 
 Experience on `00b93c34`: window painted (Sber chrome on-map), then minidumped.
 `#initializeTabsStripSections` and `makeSureEmptyTabIsFirst` did `insertBefore`
