@@ -490,4 +490,21 @@ minidump. Watched.
 
 The product tarball still contains `zen/omni.ja` and `zen/browser/omni.ja`.
 
+### Re-package with sail icons (2026-08-16 later)
+
+`./mach package` from the existing Linux objdir (clean env, no new compile).
+Overwrote
+https://github.com/tsdkanduev-coder/zen-sber/releases/download/zen-sber-linux-prerelease/zen-sber-linux-x86_64.tar.xz
+(`92 840 596` bytes, 12:53 UTC).
+
+The tarball now has the cropped dark-squircle dock icons and the
+transparent about-logo sail. `browser.urlbar.quicksuggest.rustEnabled` is
+false (locked) in the packaged `firefox.js`. The rust
+`reset_storage().expect()` string is still in this `libxul.so`; first-nav
+survives via the JS / pref guards.
+
+Reproduced again: extract, new `--profile`, `./zen https://example.com`.
+Window title **Example Domain — Nightly**. SearchService `#init`
+completed (Google / Bing / DuckDuckGo). Stayed up **70s+**. No minidump.
+
 macOS dmg / Windows exe: not built. Those need a separate OS compile; this 15 GiB VM only has the Linux tree.
