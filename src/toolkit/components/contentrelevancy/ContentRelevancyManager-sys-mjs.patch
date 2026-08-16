@@ -1,0 +1,22 @@
+diff --git a/toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs b/toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs
+index c65f3943b1..edb9a028c2 100644
+--- a/toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs
++++ b/toolkit/components/contentrelevancy/ContentRelevancyManager.sys.mjs
+@@ -507,10 +507,13 @@ class RustRelevancyStoreManager {
+     if (rustRelevancyStore === undefined) {
+       rustRelevancyStore = lazy.RelevancyStore;
+     }
+-    this.#store = rustRelevancyStore.init(
+-      path,
+-      lazy.SharedRemoteSettingsService.rustService()
+-    );
++    const rustService = lazy.SharedRemoteSettingsService.rustService();
++    if (!rustService) {
++      this.#store = null;
++      this.enabled = false;
++      return;
++    }
++    this.#store = rustRelevancyStore.init(path, rustService);
+   }
+ 
+   get store() {

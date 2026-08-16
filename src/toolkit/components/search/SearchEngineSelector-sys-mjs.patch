@@ -1,8 +1,8 @@
 diff --git a/toolkit/components/search/SearchEngineSelector.sys.mjs b/toolkit/components/search/SearchEngineSelector.sys.mjs
-index 3a42b383af..0000000000 100644
+index 3a42b383af..063775e80e 100644
 --- a/toolkit/components/search/SearchEngineSelector.sys.mjs
 +++ b/toolkit/components/search/SearchEngineSelector.sys.mjs
-@@ -46,6 +46,10 @@
+@@ -46,6 +46,10 @@ export class SearchEngineSelector {
      this.#remoteConfigOverrides = lazy.RemoteSettings(
        lazy.SearchUtils.SETTINGS_OVERRIDES_KEY
      );
@@ -13,7 +13,7 @@ index 3a42b383af..0000000000 100644
      this.#boundOnConfigurationUpdated = this._onConfigurationUpdated.bind(this);
      this.#boundOnConfigurationOverridesUpdated =
        this._onConfigurationOverridesUpdated.bind(this);
-@@ -100,7 +104,12 @@
+@@ -100,7 +104,12 @@ export class SearchEngineSelector {
      this.#getConfigurationPromise = null;
  
      if (!this.#configuration?.length) {
@@ -27,7 +27,7 @@ index 3a42b383af..0000000000 100644
      }
  
      /**
-@@ -118,11 +127,9 @@
+@@ -118,11 +127,9 @@ export class SearchEngineSelector {
        this.#listenerAdded = true;
      }
  
@@ -42,7 +42,7 @@ index 3a42b383af..0000000000 100644
      );
  
      return this.#configuration;
-@@ -216,20 +223,41 @@
+@@ -216,20 +223,48 @@ export class SearchEngineSelector {
        `fetchEngineConfiguration ${locale}:${region}:${channel}:${distroID}:${experiment}:${appName}:${version}`
      );
  
@@ -64,6 +64,13 @@ index 3a42b383af..0000000000 100644
 +        appDefaultEngineId: null,
 +        appPrivateDefaultEngineId: null,
 +      };
++    }
++
++    // Re-filtering after a later search-config-v2 refresh can hit
++    // locales_record.unwrap() in this libxul (explicit panic). Keep the
++    // first successful rust result and do not call rust again.
++    if (this.#lastRefinedConfig) {
++      return this.#lastRefinedConfig;
 +    }
  
 -    refinedSearchConfig.engines = refinedSearchConfig.engines.filter(
@@ -97,7 +104,7 @@ index 3a42b383af..0000000000 100644
        e => !e.optional
      );
  
-@@ -246,7 +274,7 @@
+@@ -246,7 +281,7 @@ export class SearchEngineSelector {
          refinedSearchConfig.appDefaultEngineId =
            refinedSearchConfig.engines[0].identifier;
        } else {
@@ -106,7 +113,23 @@ index 3a42b383af..0000000000 100644
            "Could not find any engines in the filtered configuration"
          );
        }
-@@ -366,11 +394,8 @@
+@@ -258,6 +293,7 @@ export class SearchEngineSelector {
+       );
+     }
+ 
++    this.#lastRefinedConfig = refinedSearchConfig;
+     return refinedSearchConfig;
+   }
+ 
+@@ -265,6 +301,7 @@ export class SearchEngineSelector {
+    * The remote settings client for handling the search configuration collection.
+    */
+   #remoteConfig;
++  #lastRefinedConfig;
+ 
+   /**
+    * The remote settings client for handling the search configuration overrides
+@@ -366,11 +403,8 @@ export class SearchEngineSelector {
     *   The new configuration object
     */
    _onConfigurationUpdated({ data: { current } }) {
@@ -120,7 +143,7 @@ index 3a42b383af..0000000000 100644
  
      lazy.logConsole.debug("Search configuration updated remotely");
      if (this.#changeListener) {
-@@ -393,7 +418,7 @@
+@@ -393,7 +427,7 @@ export class SearchEngineSelector {
     *   The new configuration object
     */
    _onConfigurationOverridesUpdated({ data: { current } }) {
@@ -129,10 +152,11 @@ index 3a42b383af..0000000000 100644
  
      lazy.logConsole.debug("Search configuration overrides updated remotely");
      if (this.#changeListener) {
-@@ -436,6 +461,31 @@
+@@ -435,6 +469,31 @@ export class SearchEngineSelector {
+     return this.#cachedSelector;
    }
  
-   /**
++  /**
 +   * Push config into the Rust selector. A panic/error here used to kill
 +   * the first navigation (urlbar → SearchService.init).
 +   *
@@ -157,7 +181,6 @@ index 3a42b383af..0000000000 100644
 +    }
 +  }
 +
-+  /**
+   /**
     * Converts the update channel from a string into a type the search engine
     * selector can understand.
-    *
