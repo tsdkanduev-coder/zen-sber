@@ -330,6 +330,25 @@ class nsZenWorkspaces {
         return;
       }
     }
+    // Fresh profile: Firefox already created one about:blank tab. Reuse it as
+    // the zen empty tab. Adding a second tab and later switching+removing the
+    // first one races AsyncTabSwitcher and minidumps on first run.
+    const initialTab = gBrowser.selectedTab;
+    if (
+      initialTab &&
+      !initialTab.pinned &&
+      initialTab._markedForReplacement &&
+      gBrowser.tabs.length === 1
+    ) {
+      this.log("Reusing startup about:blank as the zen empty tab");
+      initialTab.setAttribute("zen-empty-tab", "true");
+      if (initialTab.linkedBrowser) {
+        initialTab.linkedBrowser.setAttribute("transparent", "true");
+      }
+      this._emptyTab = initialTab;
+      delete this._tabToRemoveForEmpty;
+      return;
+    }
     this._emptyTab = gBrowser.addTrustedTab("about:blank", {
       inBackground: true,
       userContextId: 0,
@@ -943,9 +962,7 @@ class nsZenWorkspaces {
         );
         gBrowser.selectedTab = tabToUse;
         this._removedByStartupPage = true;
-        gBrowser.removeTab(this._tabToRemoveForEmpty, {
-          skipSessionStore: true,
-        });
+        await this.#removeStartupTabAfterSwitch(this._tabToRemoveForEmpty);
         cleanup();
       } else {
         if (gBrowser.selectedTab === this._tabToRemoveForEmpty) {
@@ -957,10 +974,7 @@ class nsZenWorkspaces {
         }
         this.log("Removing empty tab added by startup page");
         this._removedByStartupPage = true;
-        gBrowser.removeTab(this._tabToRemoveForEmpty, {
-          skipSessionStore: true,
-          animate: false,
-        });
+        await this.#removeStartupTabAfterSwitch(this._tabToRemoveForEmpty);
         cleanup();
       }
     } else {
@@ -978,13 +992,18 @@ class nsZenWorkspaces {
 
     // Wait for the next event loop to ensure that the startup focus logic by
     // firefox has finished doing it's thing.
+    // Do not call BrowserCommands.openTab() here: on a fresh profile the
+    // selected tab is the zen empty tab, and opening a replacement tab
+    // races AsyncTabSwitcher and minidumps.
     setTimeout(() => {
-      if (gZenVerticalTabsManager._canReplaceNewTab && shownEmptyTab) {
-        BrowserCommands.openTab();
-      } else if (shownEmptyTab || initialTabWasEmpty) {
-        openLocation();
-      } else {
-        gBrowser.selectedBrowser.focus();
+      try {
+        if (shownEmptyTab || initialTabWasEmpty) {
+          openLocation();
+        } else {
+          gBrowser.selectedBrowser.focus();
+        }
+      } catch (e) {
+        console.error("gZenWorkspaces: startup focus failed", e);
       }
     });
 
@@ -1013,6 +1032,37 @@ class nsZenWorkspaces {
     window.dispatchEvent(
       new CustomEvent("AfterWorkspacesSessionRestore", { bubbles: true })
     );
+  }
+
+  async #waitForTabSwitchIdle() {
+    await new Promise(resolve => window.setTimeout(resolve, 0));
+    if (!gBrowser._switcher) {
+      return;
+    }
+    await Promise.race([
+      new Promise(resolve => {
+        gBrowser.addEventListener("TabSwitchDone", resolve, { once: true });
+      }),
+      new Promise(resolve => window.setTimeout(resolve, 1000)),
+    ]);
+  }
+
+  async #removeStartupTabAfterSwitch(tabToRemove) {
+    if (!tabToRemove || tabToRemove.closing || tabToRemove === this._emptyTab) {
+      return;
+    }
+    await this.#waitForTabSwitchIdle();
+    if (
+      tabToRemove.closing ||
+      tabToRemove === this._emptyTab ||
+      tabToRemove === gBrowser.selectedTab
+    ) {
+      return;
+    }
+    gBrowser.removeTab(tabToRemove, {
+      skipSessionStore: true,
+      animate: false,
+    });
   }
 
   handleInitialTab(tab, isEmpty) {
