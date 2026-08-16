@@ -2,17 +2,18 @@ diff --git a/services/settings/RemoteSettingsClient.sys.mjs b/services/settings/
 index f4f9b1c0bc..0000000000 100644
 --- a/services/settings/RemoteSettingsClient.sys.mjs
 +++ b/services/settings/RemoteSettingsClient.sys.mjs
-@@ -351,6 +351,17 @@
+@@ -351,6 +351,18 @@
      // This attribute allows signature verification to be disabled, when running tests
      // or when pulling data from a dev server.
      this.verifySignature = AppConstants.REMOTE_SETTINGS_VERIFY_SIGNATURE;
-+    // First page load inits SearchService, which reads search-config-v2.
-+    // A failed signature retry can native-crash the content-signature
-+    // verifier. Use the bundled dump; do not treat a bad remote signature
-+    // as fatal.
++    // After first paint, delayed startup pulls search-config-v2 and
++    // crash-reports-ondemand. A failed signature retry can native-crash
++    // the content-signature verifier. Keep the dump; do not treat a bad
++    // remote signature as fatal.
 +    if (
 +      collectionName === "search-config-v2" ||
 +      collectionName === "search-config-v2-overrides" ||
++      collectionName === "crash-reports-ondemand" ||
 +      !Services.prefs.getBoolPref("services.settings.verify_signature", true)
 +    ) {
 +      this.verifySignature = false;
@@ -20,7 +21,7 @@ index f4f9b1c0bc..0000000000 100644
    }
  
    #lazy = XPCOMUtils.declareLazy({
-@@ -878,7 +889,17 @@
+@@ -878,7 +890,17 @@
              // If the signature fails again, or if an error occured during wiping out the
              // local data, then we report it as a *signature retry* error.
              reportStatus = lazy.UptakeTelemetry.STATUS.SIGNATURE_RETRY_ERROR;
@@ -39,7 +40,7 @@ index f4f9b1c0bc..0000000000 100644
            }
          } else {
            // The sync has thrown for other reason than signature verification.
-@@ -1275,6 +1296,16 @@
+@@ -1275,6 +1297,16 @@
                await this.db.clear();
              }
            }

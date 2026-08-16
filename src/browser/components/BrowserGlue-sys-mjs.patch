@@ -10,7 +10,24 @@ index d07aaa3fbb8ccb02ae00d845649dc9c1d623cba5..68d3a4800f14fef5b5e7df9cd9afe3bc
    AboutHomeStartupCache: "resource:///modules/AboutHomeStartupCache.sys.mjs",
    AWToolbarButton: "resource:///modules/aboutwelcome/AWToolbarUtils.sys.mjs",
    ASRouter: "resource:///modules/asrouter/ASRouter.sys.mjs",
-@@ -1458,7 +1459,7 @@ BrowserGlue.prototype = {
+@@ -974,10 +975,16 @@ BrowserGlue.prototype = {
+     if (AppConstants.MOZ_CRASHREPORTER) {
+-      lazy.CrashFileCleaner.init();
+-      lazy.CrashFileCleaner.scheduleCleanup();
+-      lazy.UnsubmittedCrashHandler.init();
+-      lazy.UnsubmittedCrashHandler.scheduleCheckForUnsubmittedCrashReports();
++      // Packaged builds may omit the crashreporter helper. Init must not
++      // take down a first-run window after first paint.
++      try {
++        lazy.CrashFileCleaner.init();
++        lazy.CrashFileCleaner.scheduleCleanup();
++        lazy.UnsubmittedCrashHandler.init();
++        lazy.UnsubmittedCrashHandler.scheduleCheckForUnsubmittedCrashReports();
++      } catch (e) {
++        console.error("Crash reporter init failed; continuing first-run", e);
++      }
+     }
+@@ -1458,7 +1465,7 @@ BrowserGlue.prototype = {
        windowcount++;
        let tabbrowser = win.gBrowser;
        if (tabbrowser) {

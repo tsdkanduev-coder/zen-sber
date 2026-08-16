@@ -442,24 +442,22 @@ Reproduced: extract tarball, new `--profile`, `./zen`. Log:
 `post-show: moving tab into workspace section`, then session save.
 Window stayed open **3 minutes 19 seconds**. No minidump. Watched.
 
-### Page-load search-config-v2 (minidump 4515c1ab)
+### First-run after first paint (minidump 4515c1ab)
 
-Experience correction: `4515c1ab-deb9-a138-f133-cc7ad027415d` died on the
-**first visit to example.com**, not on startup. The window came up.
+Experience on `00b93c34`: window came up (New Tab, Space, sidebar not
+green-flooded), then minidump `4515c1ab-deb9-a138-f133-cc7ad027415d`.
+BackupService was gone from the log. Immediately before the dump:
+`search-config-v2` signature fail, crashreporter missing.
 
-**Cause:** first navigation formats the urlbar (`gURLBar.formatValue` /
-`delayedStartupInit`) which calls `SearchService.init()`. That loads
-`search-config-v2`. A failed remote signature retry can native-crash the
-content-signature verifier, and an empty config used to throw
-`Failed to get engine data from Remote Settings` / Rust
-`setSearchConfig` during page load.
+**Cause:** after first paint, delayed startup inits SearchService
+(`search-config-v2`) and UnsubmittedCrashHandler
+(`crash-reports-ondemand`). A failed remote signature retry can
+native-crash the content-signature verifier. The packaged tree also
+omits the crashreporter helper.
 
-**Fix:** do not verify `search-config-v2` signatures; do not throw on
-empty/failed config; do not treat a Rust selector error as fatal. Page
-load continues without app search engines.
-
-Reproduced: extract tarball, new `--profile`, `./zen`, window up, go to
-`https://example.com`, stay up. No minidump.
+**Fix:** do not verify those Remote Settings signatures; do not throw on
+empty/failed search-config; wrap crashreporter init so a missing helper
+cannot take down first-run; default `browser.crashReports.onDemand` false.
 
 The product tarball still contains `zen/omni.ja` and `zen/browser/omni.ja`.
 
