@@ -444,6 +444,8 @@ Window stayed open **3 minutes 19 seconds**. No minidump. Watched.
 
 ### First-run search-config-v2 signature (minidump 4515c1ab)
 
+**Commit:** `367187b16` — Do not treat search-config-v2 signature failure as fatal
+
 Experience on `00b93c34`: window came up, then minidump after
 `main/search-config-v2 Signature verified failed. Retry from scratch`.
 The retry can native-crash the content-signature verifier.
